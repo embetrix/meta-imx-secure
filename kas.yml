@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: MIT
+header:
+  version: 14
+
+machine: imx95-15x15-lpddr4x-frdm
+distro: imx-secure
+target: imx-secure-image
+
+repos:
+  meta-imx-secure:
+    path: .
+
+  openembedded-core:
+    url: https://github.com/openembedded/openembedded-core.git
+    branch: wrynose
+    path: sources/openembedded-core
+    layers:
+      meta:
+
+  bitbake:
+    url: https://github.com/openembedded/bitbake.git
+    # BitBake uses numbered release branches; Wrynose uses 2.18.
+    branch: "2.18"
+    path: sources/bitbake
+    layers:
+      .: disabled
+
+  meta-openembedded:
+    url: https://github.com/openembedded/meta-openembedded.git
+    branch: wrynose
+    path: sources/meta-openembedded
+    layers:
+      meta-oe:
+      meta-python:
+      meta-networking:
+      meta-multimedia:
+
+  meta-arm:
+    url: https://git.yoctoproject.org/meta-arm
+    branch: wrynose
+    path: sources/meta-arm
+    layers:
+      meta-arm:
+      meta-arm-toolchain:
+
+  meta-freescale:
+    url: https://github.com/Freescale/meta-freescale.git
+    branch: wrynose
+    path: sources/meta-freescale
+
+  meta-imx:
+    url: https://github.com/nxp-imx/meta-imx.git
+    branch: wrynose-6.18.37-2.1.0
+    path: sources/meta-imx
+    layers:
+      meta-imx-bsp:
+
+env:
+  # Set to 1 only after reviewing and accepting NXP's license.
+  ACCEPT_FSL_EULA: "1"
+
+local_conf_header:
+  base: |
+    CONF_VERSION = "2"
+    IMAGE_FSTYPES = "wic.gz wic.bmap"
+  debug: |
+    EXTRA_IMAGE_FEATURES:append = " allow-empty-password allow-root-login empty-root-password"
