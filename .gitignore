@@ -1,8 +1,16 @@
+# Build files and sources
 /build/
+/build-*/
 /sources/
+/layers/
 /downloads/
 /sstate-cache/
+
+# kas files
 /.kas/
+/.config.yaml
+
+# Python files
 /.venv/
-*.pyc
+*.py[co]
 __pycache__/
