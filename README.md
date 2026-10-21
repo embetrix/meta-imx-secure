@@ -1,6 +1,6 @@
 # meta-imx-secure
 
-Minimal OE-Core layer for the NXP FRDM-IMX95, using Yocto Wrynose and kas.
+Yocto Wrynose layer for NXP FRDM-IMX95 using kas
 
 - Machine: `imx95-15x15-lpddr4x-frdm`
 - Distro: `imx-secure`
@@ -8,17 +8,17 @@ Minimal OE-Core layer for the NXP FRDM-IMX95, using Yocto Wrynose and kas.
 
 ## Build
 
-With kas and the Yocto host dependencies installed, run from this directory:
+Install kas and the Yocto host dependencies then run:
 
 ```sh
 kas build kas.yml
 ```
 
-The configuration accepts NXP's EULA and enables passwordless root login for
-bring-up. Review `sources/meta-imx/LICENSE.txt` before building.
+NXP's EULA is accepted in `kas.yml` and root login has no password
+Read `sources/meta-imx/LICENSE.txt` before building
 
-Images: `build/tmp/deploy/images/imx95-15x15-lpddr4x-frdm/` (`.wic.gz`).
+Images: `build/tmp/deploy/images/imx95-15x15-lpddr4x-frdm/` (`.wic.gz`)
 
-Secure boot signing and provisioning are not implemented yet.
+Secure boot signing and provisioning are not set up yet
 
-License: [MIT](COPYING.MIT).
+License: [MIT](COPYING.MIT)
