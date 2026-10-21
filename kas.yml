@@ -32,6 +32,7 @@ repos:
     layers:
       meta-oe:
       meta-python:
+      meta-perl:
       meta-networking:
       meta-multimedia:
 
@@ -43,10 +44,23 @@ repos:
       meta-arm:
       meta-arm-toolchain:
 
+  meta-yocto:
+    # Required by meta-imx-sdk through meta-freescale-distro
+    url: https://git.yoctoproject.org/meta-yocto
+    branch: wrynose
+    path: sources/meta-yocto
+    layers:
+      meta-poky:
+
   meta-freescale:
     url: https://github.com/Freescale/meta-freescale.git
     branch: wrynose
     path: sources/meta-freescale
+
+  meta-freescale-distro:
+    url: https://github.com/Freescale/meta-freescale-distro.git
+    branch: wrynose
+    path: sources/meta-freescale-distro
 
   meta-imx:
     url: https://github.com/nxp-imx/meta-imx.git
@@ -54,6 +68,7 @@ repos:
     path: sources/meta-imx
     layers:
       meta-imx-bsp:
+      meta-imx-sdk:
 
 env:
   # Set to 1 only after reviewing and accepting NXP's license.
