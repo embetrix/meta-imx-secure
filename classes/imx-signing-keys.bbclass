@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 #
-# Shared AHAB key defaults and checks for distro and recipe inheritance
+# Shared AHAB and FIT key defaults and checks
 # Generate keys and a kas fragment with tools/genkey-helper.sh
 
 IMX_SIGN_ENABLE ??= "0"
@@ -9,7 +9,40 @@ IMX_SIGN_KEYDIR ??= ""
 IMX_SIGN_CONFIG ??= ""
 IMX_SIGN_SRK_ID ??= "0"
 IMX_SIGN_PRIVATE_KEY ??= "${IMX_SIGN_KEYDIR}/srk${IMX_SIGN_SRK_ID}.pem"
-IMX_SIGN_SRK_FILES ??= "${IMX_SIGN_KEYDIR}/srk0.pub ${IMX_SIGN_KEYDIR}/srk1.pub ${IMX_SIGN_KEYDIR}/srk2.pub ${IMX_SIGN_KEYDIR}/srk3.pub"
+IMX_SIGN_SRK_FILES ??= "${IMX_SIGN_KEYDIR}/srk0.pub \
+                        ${IMX_SIGN_KEYDIR}/srk1.pub \
+                        ${IMX_SIGN_KEYDIR}/srk2.pub \
+                        ${IMX_SIGN_KEYDIR}/srk3.pub"
+
+def imx_fit_key_checksums(d, prefix="UBOOT_SIGN"):
+    import os
+
+    if d.getVar(prefix + "_ENABLE") != "1":
+        return ""
+    return " ".join(os.path.join(d.getVar(prefix + "_KEYDIR"),
+                                 d.getVar(prefix + "_KEYNAME") + suffix) + ":True"
+                    for suffix in (".key", ".crt"))
+
+def imx_validate_fit_signing_keys(d):
+    import os
+    import re
+
+    enabled = d.getVar("UBOOT_SIGN_ENABLE") or "0"
+    if enabled == "0":
+        return
+    if enabled != "1":
+        bb.fatal("UBOOT_SIGN_ENABLE must be 0 or 1")
+    keydir = d.getVar("UBOOT_SIGN_KEYDIR") or ""
+    keyname = d.getVar("UBOOT_SIGN_KEYNAME") or ""
+    if not os.path.isabs(keydir) or any(c.isspace() for c in keydir) or ":" in keydir:
+        bb.fatal("UBOOT_SIGN_KEYDIR must be an absolute path without spaces or colons")
+    if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*", keyname):
+        bb.fatal("UBOOT_SIGN_KEYNAME must be a filename without a path")
+    for suffix in (".key", ".crt"):
+        path = os.path.join(keydir, keyname + suffix)
+        if not os.path.isfile(path) or not os.access(path, os.R_OK):
+            bb.fatal("Missing FIT signing key or certificate: %s\n"
+                     "Run tools/genkey-helper.sh <KEY_DIR> to generate FIT keys" % path)
 
 def imx_validate_signing_keys(d):
     import os
@@ -55,4 +88,5 @@ imx_check_signing_keys[eventmask] = "bb.event.BuildStarted"
 
 python imx_check_signing_keys() {
     imx_validate_signing_keys(e.data)
+    imx_validate_fit_signing_keys(e.data)
 }

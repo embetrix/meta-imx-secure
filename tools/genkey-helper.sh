@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 #
-# Generate four AHAB SRK pairs and a kas signing-keys fragment
-# Usage: tools/genkey-helper.sh [KEY_DIR] [KAS_FRAGMENT] [KEY_TYPE]
-# Defaults: imx-secure-keys, kas-signing-keys.yml and secp384r1
-# KEY_TYPE can also be set in the environment
+# Generate AHAB SRK pairs, a FIT key and a kas signing-keys fragment
+# Usage: tools/genkey-helper.sh [KEY_DIR] [KAS_FRAGMENT] [KEY_TYPE] [FIT_KEY_TYPE]
+# Defaults: imx-secure-keys, kas-signing-keys.yml, secp384r1 and rsa2048
+# KEY_TYPE and FIT_KEY_TYPE can also be set in the environment
 # Existing keys are checked and reused, never replaced
 
 set -eu
@@ -17,10 +17,11 @@ die() {
 }
 
 usage() {
-    echo "Usage: $0 [KEY_DIR] [KAS_FRAGMENT] [KEY_TYPE]"
+    echo "Usage: $0 [KEY_DIR] [KAS_FRAGMENT] [KEY_TYPE] [FIT_KEY_TYPE]"
     echo "Key types: secp256r1 (or prime256v1), secp384r1, secp521r1, rsa2048, rsa3072, rsa4096"
     echo "Default key type: secp384r1, overridden by KEY_TYPE or the third argument"
     echo "Choose a key type supported by your target SoC"
+    echo "FIT key types: rsa2048 (default), rsa3072, rsa4096"
 }
 
 hsm_notice() {
@@ -37,12 +38,17 @@ case "${1:-}" in
         exit 0
         ;;
 esac
-[ "$#" -le 3 ] || die "Usage: $0 [KEY_DIR] [KAS_FRAGMENT] [KEY_TYPE]"
+[ "$#" -le 4 ] || die "Usage: $0 [KEY_DIR] [KAS_FRAGMENT] [KEY_TYPE] [FIT_KEY_TYPE]"
 command -v openssl >/dev/null 2>&1 || die "Install openssl first"
 
 KEY_DIR=${1:-imx-secure-keys}
 KAS_FRAGMENT=${2:-kas-signing-keys.yml}
 KEY_TYPE=${3:-${KEY_TYPE:-secp384r1}}
+FIT_KEY_TYPE=${4:-${FIT_KEY_TYPE:-rsa2048}}
+case "$FIT_KEY_TYPE" in
+    rsa2048|rsa3072|rsa4096) ;;
+    *) usage >&2; die "Unsupported FIT key type: $FIT_KEY_TYPE" ;;
+esac
 case "$KEY_TYPE" in
     secp256r1|prime256v1|secp384r1|secp521r1)
         CURVE=$KEY_TYPE
@@ -88,8 +94,15 @@ local_conf_header:
     IMX_SIGN_KEYDIR = "$KEY_DIR"
     IMX_SIGN_SRK_ID ?= "0"
 EOF
+# Accept the previous helper's fragment when adding FIT signing
+cp "$TEMP_DIR/kas.yml" "$TEMP_DIR/kas-ahab.yml"
+echo "    FIT_SIGN_ALG = \"$FIT_KEY_TYPE\"" >> "$TEMP_DIR/kas.yml"
+cp "$TEMP_DIR/kas.yml" "$TEMP_DIR/kas-fit.yml"
+echo "    UBOOT_SIGN_KEYDIR = \"$KEY_DIR\"" >> "$TEMP_DIR/kas.yml"
 if [ -e "$KAS_FRAGMENT" ]; then
     cmp -s "$TEMP_DIR/kas.yml" "$KAS_FRAGMENT" ||
+        cmp -s "$TEMP_DIR/kas-fit.yml" "$KAS_FRAGMENT" ||
+        cmp -s "$TEMP_DIR/kas-ahab.yml" "$KAS_FRAGMENT" ||
         die "$KAS_FRAGMENT already exists with different settings, choose another fragment path"
 fi
 
@@ -126,8 +139,42 @@ for i in 0 1 2 3; do
     chmod 644 "$public"
 done
 
+# FIT uses a separate key and certificate for U-Boot verification
+private="$KEY_DIR/fit.key"
+certificate="$KEY_DIR/fit.crt"
+[ ! -L "$private" ] && [ ! -L "$certificate" ] || die "FIT files must not be symlinks"
+if [ -e "$private" ]; then
+    echo "Checking FIT key"
+else
+    [ ! -e "$certificate" ] || die "$certificate exists without its private key"
+    echo "Generating FIT key ($FIT_KEY_TYPE)"
+    openssl genpkey -algorithm RSA -pkeyopt "rsa_keygen_bits:${FIT_KEY_TYPE#rsa}" \
+        -out "$TEMP_DIR/fit.key"
+    ln "$TEMP_DIR/fit.key" "$private"
+fi
+openssl rsa -in "$private" -passin pass: -check -noout >/dev/null ||
+    die "Invalid or encrypted FIT private key: $private"
+openssl pkey -in "$private" -passin pass: -pubout -out "$TEMP_DIR/fit.pub"
+openssl pkey -pubin -in "$TEMP_DIR/fit.pub" -text -noout > "$TEMP_DIR/fit-public.txt"
+grep -Fxq "Public-Key: (${FIT_KEY_TYPE#rsa} bit)" "$TEMP_DIR/fit-public.txt" ||
+    die "$private must use $FIT_KEY_TYPE"
+if [ ! -e "$certificate" ]; then
+    openssl req -new -x509 -sha256 -days 3650 -subj "/CN=i.MX FIT signing/" \
+        -key "$private" -passin pass: -out "$TEMP_DIR/fit.crt"
+    ln "$TEMP_DIR/fit.crt" "$certificate"
+fi
+openssl x509 -in "$certificate" -pubkey -noout > "$TEMP_DIR/fit-cert.pub"
+openssl pkey -pubin -in "$TEMP_DIR/fit-cert.pub" -outform DER -out "$TEMP_DIR/fit-cert.der"
+openssl pkey -pubin -in "$TEMP_DIR/fit.pub" -outform DER -out "$TEMP_DIR/fit-key.der"
+cmp -s "$TEMP_DIR/fit-cert.der" "$TEMP_DIR/fit-key.der" ||
+    die "$certificate does not match $private"
+chmod 600 "$private"
+chmod 644 "$certificate"
+
 if [ ! -e "$KAS_FRAGMENT" ]; then
     (set -C; cat "$TEMP_DIR/kas.yml" > "$KAS_FRAGMENT")
+elif cmp -s "$TEMP_DIR/kas-ahab.yml" "$KAS_FRAGMENT" || cmp -s "$TEMP_DIR/kas-fit.yml" "$KAS_FRAGMENT"; then
+    cat "$TEMP_DIR/kas.yml" > "$KAS_FRAGMENT"
 fi
 echo "Keys checked in: $KEY_DIR"
 echo "Kas fragment: $KAS_FRAGMENT"
