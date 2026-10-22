@@ -1,0 +1,25 @@
+From 164592963685d125a824ae212ea42ef0767fe8da Mon Sep 17 00:00:00 2001
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Date: Thu, 22 Oct 2026 09:22:14 +0200
+Subject: [PATCH] t61codec: allow flit-core 3
+
+Allow the flit-core version provided by Wrynose.
+
+Upstream-Status: Inappropriate [Yocto integration]
+
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+ pyproject.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pyproject.toml b/pyproject.toml
+index 7ad8c2e..95e0db0 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,5 +1,5 @@
+ [build-system]
+-requires = ["flit_core >=2,<3"]
++requires = ["flit_core >=2,<4"]
+ build-backend = "flit_core.buildapi"
+ 
+ [tool.flit.metadata]
