@@ -4,8 +4,13 @@ A Yocto layer that provides a security-hardened baseline for i.MX device, extend
 
 ## Build
 
-Install kas and the Yocto host dependencies then run:
+Install kas, OpenSSL and the Yocto host dependencies, then generate the AHAB signing keys and kas fragment:
 
 ```sh
-KAS_MACHINE=<machine> kas build kas-imx-secure.yml
+tools/genkey-helper.sh
+KAS_MACHINE=<machine> kas build kas-imx-secure.yml:kas-signing-keys.yml
 ```
+
+The helper checks and reuses existing keys. It defaults to P-384. Set `KEY_TYPE` when generating keys to choose another type supported by your SoC.
+
+The generated `kas-signing-keys.yml` sets the key directory and enables signing. Keys and the fragment stay local and are not committed.

@@ -88,6 +88,4 @@ local_conf_header:
     EXTRA_IMAGE_FEATURES:append = " allow-empty-password allow-root-login empty-root-password"
   signing: |
     IMX_SIGN_ENABLE = "1"
-    IMX_SIGN_KEYDIR = "/home/zaki/imx-signing-keys"
-    IMX_SIGN_SRK_ID = "0"
     IMX_SIGN_DEBUG  = "1"
