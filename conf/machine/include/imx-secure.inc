@@ -15,3 +15,5 @@ UBOOT_ENTRYPOINT:mx95-generic-bsp ?= "0x90400000"
 
 IMAGE_BOOT_FILES:append = " fitImage"
 do_image_wic[depends] += "linux-yocto-fitimage:do_deploy"
+
+IMAGE_FSTYPES += "wic.gz wic.bmap"

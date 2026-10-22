@@ -83,7 +83,6 @@ env:
 local_conf_header:
   base: |
     CONF_VERSION = "2"
-    IMAGE_FSTYPES = "wic.gz wic.bmap"
     INHERIT += "rm_work"
   debug: |
     EXTRA_IMAGE_FEATURES:append = " allow-empty-password allow-root-login empty-root-password"
