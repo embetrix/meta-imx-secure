@@ -15,7 +15,7 @@ repos:
   openembedded-core:
     url: https://github.com/openembedded/openembedded-core.git
     branch: wrynose
-    path: sources/openembedded-core
+    path: layers/openembedded-core
     layers:
       meta:
 
@@ -23,14 +23,14 @@ repos:
     url: https://github.com/openembedded/bitbake.git
     # Wrynose uses BitBake 2.18
     branch: "2.18"
-    path: sources/bitbake
+    path: layers/bitbake
     layers:
       .: disabled
 
   meta-openembedded:
     url: https://github.com/openembedded/meta-openembedded.git
     branch: wrynose
-    path: sources/meta-openembedded
+    path: layers/meta-openembedded
     layers:
       meta-oe:
       meta-python:
@@ -42,7 +42,7 @@ repos:
     url: https://git.yoctoproject.org/meta-arm
     branch: wrynose
     commit: 0979b80429099f1a42dc0026c8c466cee780bc74
-    path: sources/meta-arm
+    path: layers/meta-arm
     layers:
       meta-arm:
       meta-arm-toolchain:
@@ -51,7 +51,7 @@ repos:
     # Required by meta-imx-sdk through meta-freescale-distro
     url: https://git.yoctoproject.org/meta-yocto
     branch: wrynose
-    path: sources/meta-yocto
+    path: layers/meta-yocto
     layers:
       meta-poky:
 
@@ -59,19 +59,19 @@ repos:
     url: https://github.com/Freescale/meta-freescale.git
     branch: wrynose
     commit: ca31f33c5b5e433939c5f8442d2de56925d638bd
-    path: sources/meta-freescale
+    path: layers/meta-freescale
 
   meta-freescale-distro:
     url: https://github.com/Freescale/meta-freescale-distro.git
     branch: wrynose
     commit: 4464f38b4aa618b5942f5e35dd25cff590f410a6
-    path: sources/meta-freescale-distro
+    path: layers/meta-freescale-distro
 
   meta-imx:
     url: https://github.com/nxp-imx/meta-imx.git
     branch: wrynose-6.18.37-2.1.0
     commit: 840f8da0f3350bf389067f84922c7436efde0653
-    path: sources/meta-imx
+    path: layers/meta-imx
     layers:
       meta-imx-bsp:
       meta-imx-sdk:

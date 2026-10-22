@@ -11,11 +11,11 @@ Yocto Wrynose layer for NXP FRDM-IMX95 using kas
 Install kas and the Yocto host dependencies then run:
 
 ```sh
-kas build kas.yml
+kas build kas-imx-secure.yml
 ```
 
-NXP's EULA is accepted in `kas.yml` and root login has no password
-Read `sources/meta-imx/LICENSE.txt` before building
+NXP's EULA is accepted in `kas-imx-secure.yml` and root login has no password
+Read `layers/meta-imx/LICENSE.txt` before building
 
 Images: `build/tmp/deploy/images/imx95-15x15-lpddr4x-frdm/` (`.wic.gz`)
 
