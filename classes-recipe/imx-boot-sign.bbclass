@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (C) 2026 Ayoub Zaki <ayoub.zaki@embetrix.com>
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 #
 # Sign and verify i.MX8/9 AHAB boot images using SPSDK
 # AHAB only, HABv4 signing is not implemented
@@ -11,6 +11,7 @@
 # This class does not program SRK hash fuses or change the device lifecycle
 #
 # Enable in local.conf or distro configuration:
+# Generate keys and a kas fragment with tools/genkey-helper.sh <KEY_DIR>
 # IMX_SIGN_ENABLE = "1"
 # IMX_SIGN_KEYDIR = "/path/to/signing-keys"
 # Set IMX_SIGN_DEBUG = "1" to show signing details in the build console
@@ -25,6 +26,8 @@
 # Keep all referenced keys inside IMX_SIGN_KEYDIR so key changes trigger signing
 # Encryption, certificate delegation and PQC signing are not supported yet
 # The u-boot-imx bbappend enables boot authentication when signing is enabled
+
+inherit imx-signing-keys
 
 # Match specific SoCs before shared BSP overrides
 def imx_sign_soc(d):
@@ -68,13 +71,7 @@ IMX_SPSDK_REVISION ??= "${@imx_sign_revision(d)}"
 # Set a UBOOT_CONFIG flag for other layouts, for example [fspi] = "flexspi_nor"
 IMX_SPSDK_MEMORY_TYPE ??= "serial_downloader"
 
-IMX_SIGN_ENABLE ??= "0"
 IMX_SIGN_DEBUG ??= "0"
-IMX_SIGN_KEYDIR ??= ""
-IMX_SIGN_CONFIG ??= ""
-IMX_SIGN_SRK_ID ??= "0"
-IMX_SIGN_PRIVATE_KEY ??= "${IMX_SIGN_KEYDIR}/srk${IMX_SIGN_SRK_ID}.pem"
-IMX_SIGN_SRK_FILES ??= "${IMX_SIGN_KEYDIR}/srk0.pub ${IMX_SIGN_KEYDIR}/srk1.pub ${IMX_SIGN_KEYDIR}/srk2.pub ${IMX_SIGN_KEYDIR}/srk3.pub"
 IMX_SIGN_UNSIGNED_DIR = "${WORKDIR}/imx-boot-unsigned"
 IMX_SIGN_OUTPUT_DIR = "${WORKDIR}/imx-boot-signed"
 
@@ -188,8 +185,7 @@ do_imx_boot_sign[cleandirs] = "${IMX_SIGN_OUTPUT_DIR}"
 do_imx_boot_sign[vardeps] += "IMX_SPSDK_MEMORY_TYPE UBOOT_CONFIG IMXBOOT_TARGETS BOOT_VARIANT MACHINE"
 
 python __anonymous() {
-    if d.getVar("IMX_SIGN_ENABLE") not in ("0", "1"):
-        bb.fatal("IMX_SIGN_ENABLE must be 0 or 1")
+    imx_validate_signing_keys(d)
     if d.getVar("IMX_SIGN_ENABLE") != "1":
         return
     if d.getVar("IMX_SIGN_FORMAT") == "hab4":
@@ -199,22 +195,6 @@ python __anonymous() {
         bb.fatal("AHAB signing needs IMX_SIGN_FORMAT = 'ahab' and IMX_SIGN_BACKEND = 'spsdk'")
     if not d.getVar("IMX_SPSDK_FAMILY") or d.getVar("IMX_SPSDK_REVISION") in ("", "latest"):
         bb.fatal("Set IMX_SPSDK_FAMILY and an explicit IMX_SPSDK_REVISION")
-    variables = ["IMX_SIGN_KEYDIR"]
-    if d.getVar("IMX_SIGN_CONFIG"):
-        variables.append("IMX_SIGN_CONFIG")
-    else:
-        if d.getVar("IMX_SIGN_SRK_ID") not in ("0", "1", "2", "3"):
-            bb.fatal("IMX_SIGN_SRK_ID must be 0, 1, 2 or 3")
-        if len(d.getVar("IMX_SIGN_SRK_FILES").split()) != 4:
-            bb.fatal("IMX_SIGN_SRK_FILES must list four public keys or certificates")
-    for variable in variables:
-        path = d.getVar(variable)
-        if not os.path.isabs(path) or any(c.isspace() for c in path) or ":" in path:
-            bb.fatal("%s must be an absolute path without spaces or colons" % variable)
-    if not os.path.isdir(d.getVar("IMX_SIGN_KEYDIR")):
-        bb.fatal("IMX_SIGN_KEYDIR does not exist")
-    if d.getVar("IMX_SIGN_CONFIG") and not os.path.isfile(d.getVar("IMX_SIGN_CONFIG")):
-        bb.fatal("IMX_SIGN_CONFIG does not exist")
     # BitBake does not walk directory symlinks when hashing inputs
     d.setVar("IMX_SIGN_KEYDIR", os.path.realpath(d.getVar("IMX_SIGN_KEYDIR")))
 

@@ -9,6 +9,10 @@
 # kas files
 /.kas/
 /.config.yaml
+/kas-signing-keys.yml
+
+# Generated signing keys
+/imx-secure-keys/
 
 # Python files
 /.venv/
