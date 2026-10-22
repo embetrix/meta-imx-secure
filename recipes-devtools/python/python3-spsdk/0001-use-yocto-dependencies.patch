@@ -1,0 +1,119 @@
+From 02508c9109a36ff224723986b26bfb1a4f187897 Mon Sep 17 00:00:00 2001
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Date: Thu, 22 Oct 2026 09:22:14 +0200
+Subject: [PATCH] spsdk: package image signing tools for Wrynose
+
+Only install nxpimage and nxpcrypto. Load the EdgeLock transport when its
+CLI option is used so signing does not need libuuu. Wrynose supplies a
+pure Python YAML parser and newer setuptools, chardet and
+importlib-metadata.
+
+Upstream-Status: Inappropriate [signing-only package]
+
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+ pyproject.toml                         | 19 -------------------
+ requirements.txt                       | 11 +++--------
+ spsdk/apps/utils/common_cli_options.py |  5 ++++-
+ 3 files changed, 7 insertions(+), 28 deletions(-)
+
+diff --git a/pyproject.toml b/pyproject.toml
+index f938fe7..1471658 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -61,27 +61,8 @@ all = [
+ ]
+ 
+ [project.scripts]
+-pfr = "spsdk.apps.pfr:safe_main"
+-blhost = "spsdk.apps.blhost:safe_main"
+-sdphost = "spsdk.apps.sdphost:safe_main"
+-sdpshost = "spsdk.apps.sdpshost:safe_main"
+-spsdk = "spsdk.apps.spsdk_apps:safe_main"
+-nxpdebugmbox = "spsdk.apps.nxpdebugmbox:safe_main"
+ nxpcrypto = "spsdk.apps.nxpcrypto:safe_main"
+-nxpdevscan = "spsdk.apps.nxpdevscan:safe_main"
+-nxpdevhsm = "spsdk.apps.nxpdevhsm:safe_main"
+-nxpele = "spsdk.apps.nxpele:safe_main"
+-nxpdice = "spsdk.apps.nxpdice:safe_main"
+ nxpimage = "spsdk.apps.nxpimage:safe_main"
+-nxpmemcfg = "spsdk.apps.nxpmemcfg:safe_main"
+-nxpuuu = "spsdk.apps.nxpuuu:safe_main"
+-nxpwpc = "spsdk.apps.nxpwpc:safe_main"
+-shadowregs = "spsdk.apps.shadowregs:safe_main"
+-nxpfuses = "spsdk.apps.nxpfuses:safe_main"
+-dk6prog = "spsdk.apps.dk6prog:safe_main"
+-el2go-host = "spsdk.apps.el2go:safe_main"
+-lpcprog = "spsdk.apps.lpcprog:safe_main"
+-nxpshe = "spsdk.apps.nxpshe:safe_main"
+ 
+ [build-system]
+ requires = ["setuptools_scm<10", "setuptools>=77", "wheel"]
+diff --git a/requirements.txt b/requirements.txt
+index 502d479..0ec6657 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,7 +1,7 @@
+ asn1crypto<2,>=1.2
+ bincopy<21,>=17.14.5
+ bitstring<5,>=3.1
+-chardet<6 # remove once https://github.com/psf/requests/issues/7223 is fixed
++chardet<7 # remove once https://github.com/psf/requests/issues/7223 is fixed
+ click-command-tree<2
+ click-option-group<1,>=0.3.0
+ click!=8.1.4,!=8.3,<9,>=7.1
+@@ -13,10 +13,8 @@ deepmerge<3
+ fastjsonschema<3,>=2.15.1
+ filelock<4,>=3
+ hexdump<4
+-importlib-metadata<9
++importlib-metadata<10
+ libusbsio<3,>=2.2.0
+-libuuu<2,>=1.5.239
+-oscrypto<2
+ packaging<27,>=23.2
+ platformdirs<5,>=3.9.1
+ prettytable<4,>=3.12
+@@ -24,11 +22,8 @@ pyasn1<1,>=0.6
+ pyserial<4,>=3.1
+ requests<3,>=2.32.3
+ ruamel.yaml<1,>=0.17
+-ruamel.yaml.clib!=0.2.13,!=0.2.15,<1  # 0.2.13: missing header files for build, 0.2.15: Black Duck detection issues
+ setuptools_scm<10
+-setuptools<81,>75
++setuptools>75
+ sly<1
+-spsdk-mcu-link<1,>=0.6.9
+-spsdk-pyocd<1,>=0.2.0
+ typing-extensions<5
+ x690<2,>=1.0
+diff --git a/spsdk/apps/utils/common_cli_options.py b/spsdk/apps/utils/common_cli_options.py
+index 14983d2..42df6e0 100644
+--- a/spsdk/apps/utils/common_cli_options.py
++++ b/spsdk/apps/utils/common_cli_options.py
+@@ -29,7 +29,6 @@ from spsdk import __version__ as spsdk_version
+ from spsdk.apps.utils import spsdk_logger
+ from spsdk.apps.utils.interface_helper import load_interface_config
+ from spsdk.apps.utils.utils import INT, SPSDKAppError, make_table_from_items
+-from spsdk.el2go.interface import EL2GOInterfaceHandler
+ from spsdk.exceptions import SPSDKError, SPSDKValueError
+ from spsdk.mboot.interfaces.uart import MbootUARTInterface
+ from spsdk.mboot.protocol.base import MbootProtocolBase
+@@ -348,6 +347,8 @@ def interface_plugin_option() -> Callable[[FC], FC]:
+ 
+ def el2go_interface_option() -> Callable[[FC], FC]:
+     """Click decorator handling El2Go interface configuration."""
++    from spsdk.el2go.interface import EL2GOInterfaceHandler
++
+     return click.option(
+         "-d",
+         "--device",
+@@ -1054,6 +1055,8 @@ def spsdk_el2go_interface(
+ 
+     :return: Click decorator.
+     """
++    from spsdk.el2go.interface import EL2GOInterfaceHandler
++
+ 
+     def decorator(func: Callable[[FC], FC]) -> Callable:
+         @functools.wraps(func)
