@@ -8,6 +8,7 @@
 # Sign OEM containers and preserve NXP and V2X containers
 # Verify signatures, image hashes and unchanged payloads before deployment
 # Deploy signed images under the normal imx-boot filenames
+# Deploy SPSDK SRK hashes and fuse scripts in <image>.fuses/
 # This class does not program SRK hash fuses or change the device lifecycle
 #
 # Enable in local.conf or distro configuration:
@@ -172,6 +173,7 @@ python do_imx_boot_sign() {
             check=True, env=environment)
         if debug:
             bb.verbnote("Verified signatures and unchanged payloads: %s" % output)
+            bb.verbnote("SPSDK SRK hashes and fuse scripts: %s.fuses/" % output)
 
     # Publish only after every variant has passed verification
     for config, name in images:
@@ -183,6 +185,15 @@ python do_imx_boot_sign() {
 }
 do_imx_boot_sign[cleandirs] = "${IMX_SIGN_OUTPUT_DIR}"
 do_imx_boot_sign[vardeps] += "IMX_SPSDK_MEMORY_TYPE UBOOT_CONFIG IMXBOOT_TARGETS BOOT_VARIANT MACHINE"
+
+python imx_sign_deploy_srk() {
+    import shutil
+
+    for config, name in imx_sign_images(d):
+        shutil.copytree(os.path.join(d.getVar("IMX_SIGN_OUTPUT_DIR"), name + ".fuses"),
+                        os.path.join(d.getVar("DEPLOYDIR"), name + ".fuses"),
+                        dirs_exist_ok=True)
+}
 
 python __anonymous() {
     imx_validate_signing_keys(d)
@@ -201,6 +212,8 @@ python __anonymous() {
     d.appendVar("DEPENDS", " python3-spsdk-native")
     d.appendVarFlag("do_compile", "cleandirs", " " + d.getVar("IMX_SIGN_UNSIGNED_DIR"))
     d.appendVarFlag("do_compile", "postfuncs", " imx_sign_save_unsigned")
+    # Copy before deploy's sstate postfunc publishes DEPLOYDIR
+    d.prependVarFlag("do_deploy", "postfuncs", "imx_sign_deploy_srk ")
     d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_KEYDIR"))
     if d.getVar("IMX_SIGN_CONFIG"):
         d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_CONFIG"))
@@ -292,6 +305,7 @@ python imx_sign_ahab() {
         after = containers(signed)
         if len(before) != len(after):
             raise ValueError("Signing changed the container count")
+        signed_oem = []
         for old, new in zip(before, after):
             if ([(i.export(), i.image) for i in old.image_array] !=
                     [(i.export(), i.image) for i in new.image_array]):
@@ -304,8 +318,18 @@ python imx_sign_ahab() {
                     new.get_signature_data())
                 if authenticity.result != VerifierResult.SUCCEEDED:
                     raise ValueError(f"OEM signature verification did not succeed:\n{authenticity}")
+                signed_oem.append(new)
             elif old.export() != new.export():
                 raise ValueError("Signing changed a non-OEM container")
+        hashes = {container.get_srk_hash(0) for container in signed_oem}
+        if len(hashes) != 1 or not all(hashes):
+            raise ValueError("OEM containers must use the same non-empty SRK hash")
+        fuse_dir = destination.with_name(destination.name + ".fuses")
+        fuse_dir.mkdir(parents=True, exist_ok=True)
+        # Use the same SPSDK export as nxpimage ahab sign --fuse-scripts
+        for index, container in enumerate(after):
+            if signable(container):
+                container.post_export(str(fuse_dir), index)
         destination.write_bytes(data)
 
 
