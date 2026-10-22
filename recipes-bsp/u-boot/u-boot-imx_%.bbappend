@@ -3,6 +3,8 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI:append = " file://fit.cfg"
+SRC_URI:append:imx91-11x11-lpddr4-frdm = " file://fit-imx91.cfg \
+                                           file://0001-imx91-frdm-apply-fit-boot-defaults.patch"
 
 SRC_URI:append:mx95-generic-bsp = " file://fit-imx95.cfg \
                                     file://0001-imx95-frdm-apply-fit-boot-defaults.patch"
