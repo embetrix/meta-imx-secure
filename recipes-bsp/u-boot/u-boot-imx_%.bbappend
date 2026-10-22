@@ -1,10 +1,22 @@
 # SPDX-License-Identifier: MIT
 
+inherit imx-signing-keys
+
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI:append = " file://fit.cfg"
+
+do_uboot_assemble_fitimage[file-checksums] += "${@imx_fit_key_checksums(d)}"
+
+# OE-Core only warns when the control DTB is missing
+concat_dtb:prepend() {
+    test -f "${UBOOT_DTB_BINARY}" || bbfatal "Missing U-Boot control DTB for FIT verification"
+    test -f "${UBOOT_NODTB_BINARY}" || bbfatal "Missing U-Boot binary for FIT verification"
+}
+
 SRC_URI:append:imx91-11x11-lpddr4-frdm = " file://fit-imx91.cfg \
                                            file://0001-imx91-frdm-apply-fit-boot-defaults.patch"
+
 SRC_URI:append:imx93-11x11-lpddr4x-frdm = " file://fit-imx93.cfg \
                                             file://0001-imx93-frdm-apply-fit-boot-defaults.patch"
 

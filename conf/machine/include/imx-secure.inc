@@ -2,6 +2,12 @@
 
 INHERIT += "imx-signing-keys"
 
+UBOOT_SIGN_ENABLE ?= "${IMX_SIGN_ENABLE}"
+UBOOT_SIGN_KEYDIR ?= ""
+UBOOT_SIGN_KEYNAME ?= "fit"
+FIT_SIGN_ALG ?= "rsa2048"
+FIT_SIGN_INDIVIDUAL = "0"
+
 # Provide kernel artifacts for FIT generation alongside Image
 KERNEL_CLASSES:append = " kernel-fit-extra-artifacts"
 UBOOT_ENTRYPOINT:mx91-generic-bsp ?= "0x80400000"
