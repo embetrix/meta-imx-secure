@@ -1,0 +1,31 @@
+From 8292a884fdd39908ca1a0f534347b22392a24188 Mon Sep 17 00:00:00 2001
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Date: Sat, 24 Oct 2026 13:47:27 +0200
+Subject: [PATCH] bootm: Always verify signed FIT images
+
+Keep FIT verification enabled when signature support is built in.
+The verify environment variable must not skip required key checks.
+
+Upstream-Status: Inappropriate [layer signing policy]
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+ boot/bootm.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/boot/bootm.c b/boot/bootm.c
+index 4bdca22..00c36b3 100644
+--- a/boot/bootm.c
++++ b/boot/bootm.c
+@@ -243,7 +243,8 @@ static int boot_get_kernel(const char *addr_fit, struct bootm_headers *images,
+ static int bootm_start(void)
+ {
+ 	memset((void *)&images, 0, sizeof(images));
+-	images.verify = env_get_yesno("verify");
++	images.verify = CONFIG_IS_ENABLED(FIT_SIGNATURE) ||
++			env_get_yesno("verify");
+ 
+ 	bootstage_mark_name(BOOTSTAGE_ID_BOOTM_START, "bootm_start");
+ 	images.state = BOOTM_STATE_START;
+-- 
+2.53.0
+

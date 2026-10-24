@@ -6,7 +6,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI:append = " file://fit.cfg \
                    file://fit-mmc.cfg \
-                   file://fit-boot.dtsi;subdir=${BP}/include"
+                   file://fit-boot.dtsi;subdir=${BP}/include \
+                   ${@bb.utils.contains('UBOOT_SIGN_ENABLE', '1', 'file://0001-bootm-always-verify-signed-fit.patch', '', d)}"
 
 do_uboot_assemble_fitimage[file-checksums] += "${@imx_fit_key_checksums(d)}"
 
