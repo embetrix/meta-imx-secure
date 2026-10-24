@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: MIT
+
+#include <generated/autoconf.h>
+
+/ {
+	config {
+		/* Use the compiled boot command */
+		bootcmd = CONFIG_BOOTCOMMAND;
+	};
+};

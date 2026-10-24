@@ -10,6 +10,8 @@ FIT_SIGN_INDIVIDUAL = "0"
 
 # Provide kernel artifacts for FIT generation alongside Image
 KERNEL_CLASSES:append = " kernel-fit-extra-artifacts"
+
+# i.MX91 and i.MX95 entry points are missing from meta-freescale's imx-base.inc
 UBOOT_ENTRYPOINT:mx91-generic-bsp ?= "0x80400000"
 UBOOT_ENTRYPOINT:mx95-generic-bsp ?= "0x90400000"
 
