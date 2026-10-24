@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
 
-inherit imx-signing-keys
-
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI:append = " file://fit.cfg \

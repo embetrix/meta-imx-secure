@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: MIT
 
-inherit imx-signing-keys
-
 do_compile[file-checksums] += "${@imx_fit_key_checksums(d, 'FIT_KERNEL_SIGN')}"
 do_compile[depends] += "${@bb.utils.contains('UBOOT_SIGN_ENABLE', '1', 'virtual/bootloader:do_deploy', '', d)}"
 

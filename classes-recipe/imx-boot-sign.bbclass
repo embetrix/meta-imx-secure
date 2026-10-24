@@ -13,6 +13,7 @@
 #
 # Enable in local.conf or distro configuration:
 # Generate keys and a kas fragment with tools/genkey-helper.sh <KEY_DIR>
+# INHERIT += "imx-signing-keys"
 # IMX_SIGN_ENABLE = "1"
 # IMX_SIGN_KEYDIR = "/path/to/signing-keys"
 # Set IMX_SIGN_DEBUG = "1" to show signing details in the build console
@@ -27,8 +28,6 @@
 # Keep all referenced keys inside IMX_SIGN_KEYDIR so key changes trigger signing
 # Encryption, certificate delegation and PQC signing are not supported yet
 # The u-boot-imx bbappend enables boot authentication when signing is enabled
-
-inherit imx-signing-keys
 
 # Match specific SoCs before shared BSP overrides
 def imx_sign_soc(d):
