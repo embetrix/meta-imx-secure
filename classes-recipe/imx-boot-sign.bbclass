@@ -25,8 +25,13 @@
 # Set IMX_SIGN_CONFIG only when supplying a custom YAML file
 # Override IMX_SPSDK_FAMILY and IMX_SPSDK_REVISION for a specific SPSDK profile
 # List profiles with nxpimage ahab get-families -c get-template
-# Keep all referenced keys inside IMX_SIGN_KEYDIR so key changes trigger signing
-# Encryption, certificate delegation and PQC signing are not supported yet
+# Set IMX_SIGN_PQC_ENABLE = "1" to add a second signer from IMX_SIGN_PQC_KEYDIR
+# PQC keys default to srk0.pub through srk3.pub and srk${IMX_SIGN_SRK_ID}.pem
+# Set IMX_SIGN_HASH_ALGORITHM and IMX_SIGN_PQC_HASH_ALGORITHM for each SRK table
+# Keep keys inside their configured key directories so changes trigger signing
+# SoC formats, SPSDK profiles and PQC revisions are listed in imx_sign_soc_data
+# Second key sets require a family, revision and OEM containers supporting AHAB v2
+# Encryption and certificate delegation are not supported yet
 # The u-boot-imx bbappend enables boot authentication when signing is enabled
 
 # Keep specific SoCs before shared BSP overrides
@@ -114,6 +119,7 @@ def imx_sign_config(d):
         "IMX_SIGN_PRIVATE_KEY": os.path.join(keydir, d.getVar("IMX_SIGN_PRIVATE_KEY")),
         "IMX_SIGN_SRK_FILES": [os.path.join(keydir, key)
                                for key in d.getVar("IMX_SIGN_SRK_FILES").split()],
+        "IMX_SIGN_HASH_ALGORITHM": d.getVar("IMX_SIGN_HASH_ALGORITHM"),
     }
     template = textwrap.dedent("""\
         family: @IMX_SPSDK_FAMILY@
@@ -123,8 +129,24 @@ def imx_sign_config(d):
         signer: @IMX_SIGN_PRIVATE_KEY@
         srk_table:
           flag_ca: false
+          hash_algorithm: @IMX_SIGN_HASH_ALGORITHM@
           srk_array: @IMX_SIGN_SRK_FILES@
         """)
+    if d.getVar("IMX_SIGN_PQC_ENABLE") == "1":
+        pqc_keydir = d.getVar("IMX_SIGN_PQC_KEYDIR")
+        values.update({
+            "IMX_SIGN_PQC_PRIVATE_KEY": os.path.join(pqc_keydir, d.getVar("IMX_SIGN_PQC_PRIVATE_KEY")),
+            "IMX_SIGN_PQC_SRK_FILES": [os.path.join(pqc_keydir, key)
+                                       for key in d.getVar("IMX_SIGN_PQC_SRK_FILES").split()],
+            "IMX_SIGN_PQC_HASH_ALGORITHM": d.getVar("IMX_SIGN_PQC_HASH_ALGORITHM"),
+        })
+        template += textwrap.indent(textwrap.dedent("""\
+            srk_table_#2:
+              flag_ca: false
+              hash_algorithm: @IMX_SIGN_PQC_HASH_ALGORITHM@
+              srk_array: @IMX_SIGN_PQC_SRK_FILES@
+            """), "  ")
+        template += "signer_#2: @IMX_SIGN_PQC_PRIVATE_KEY@\ncheck_all_signatures: check_all_signatures\n"
     for name, value in values.items():
         template = template.replace("@" + name + "@", json.dumps(value))
     output = Path(d.getVar("T"), "ahab-sign.yaml")
@@ -142,6 +164,7 @@ python imx_sign_save_unsigned() {
 }
 
 python do_imx_boot_sign() {
+    import json
     import shutil
     import subprocess
     import textwrap
@@ -162,7 +185,10 @@ python do_imx_boot_sign() {
         "--key-dir", d.getVar("IMX_SIGN_KEYDIR"),
         "--family", d.getVar("IMX_SPSDK_FAMILY"),
         "--revision", d.getVar("IMX_SPSDK_REVISION"),
+        "--pqc-profiles", json.dumps(imx_sign_pqc_profiles()),
     ]
+    if d.getVar("IMX_SIGN_PQC_ENABLE") == "1":
+        command += ["--pqc-key-dir", d.getVar("IMX_SIGN_PQC_KEYDIR")]
     environment = os.environ.copy()
     environment["PYTHONNOUSERSITE"] = "1"
     environment["SPSDK_CACHE_FOLDER"] = os.path.join(d.getVar("T"), "spsdk-cache")
@@ -176,12 +202,17 @@ python do_imx_boot_sign() {
             name, d.getVar("IMX_SPSDK_FAMILY"), d.getVar("IMX_SPSDK_REVISION"), memory))
         if debug:
             bb.verbnote("Signing %s -> %s (memory type: %s)" % (source, output, memory))
-        subprocess.run(command + [
+        result = subprocess.run(command + [
             "--memory-type", memory,
             "--input", source,
             "--output", output,
         ], input=textwrap.dedent(d.getVar("imx_sign_ahab")), text=True,
-            check=True, env=environment)
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=environment)
+        if result.returncode:
+            detail = result.stdout.strip() or "SPSDK exited with status %s" % result.returncode
+            bb.fatal("Signing %s failed:\n%s" % (name, detail))
+        if result.stdout:
+            bb.note(result.stdout.rstrip())
         if debug:
             bb.verbnote("Verified signatures and unchanged payloads: %s" % output)
             bb.verbnote("SPSDK SRK hashes and fuse scripts: %s.fuses/" % output)
@@ -207,20 +238,38 @@ python imx_sign_deploy_srk() {
 }
 
 python __anonymous() {
-    imx_validate_signing_keys(d)
     if d.getVar("IMX_SIGN_ENABLE") != "1":
+        imx_validate_signing_keys(d)
         return
-    if d.getVar("IMX_SIGN_FORMAT") == "hab4":
-        bb.fatal("HABv4 signing needs CST and is not implemented yet")
-    if (d.getVar("IMX_SIGN_FORMAT") != "ahab" or
-            d.getVar("IMX_SIGN_BACKEND") != "spsdk"):
-        bb.fatal("AHAB signing needs IMX_SIGN_FORMAT = 'ahab' and IMX_SIGN_BACKEND = 'spsdk'")
-    if not d.getVar("IMX_SPSDK_FAMILY") or d.getVar("IMX_SPSDK_REVISION") in ("", "latest"):
-        bb.fatal("Set IMX_SPSDK_FAMILY and an explicit IMX_SPSDK_REVISION")
+    sign_format = d.getVar("IMX_SIGN_FORMAT")
+    if sign_format == "hab4":
+        bb.fatal("HABv4 imx-boot signing is not implemented for %s\n"
+                 'Set IMX_SIGN_ENABLE = "0" to build without boot image signing' % d.getVar("MACHINE"))
+    if sign_format != "ahab":
+        bb.fatal("Unsupported IMX_SIGN_FORMAT: %r\nThis class supports 'ahab'" % sign_format)
+    if d.getVar("IMX_SIGN_BACKEND") != "spsdk":
+        bb.fatal("Unsupported IMX_SIGN_BACKEND: %r\nAHAB signing needs 'spsdk'" % d.getVar("IMX_SIGN_BACKEND"))
+    if not d.getVar("IMX_SPSDK_FAMILY"):
+        bb.fatal("Set IMX_SPSDK_FAMILY to an SPSDK AHAB family")
+    if not d.getVar("IMX_SPSDK_REVISION") or d.getVar("IMX_SPSDK_REVISION") == "latest":
+        bb.fatal("Set IMX_SPSDK_REVISION to an explicit silicon revision")
+    if d.getVar("IMX_SIGN_PQC_ENABLE") == "1":
+        soc = imx_sign_soc_data().get(d.getVar("IMX_SIGN_SOC"), {})
+        revision = d.getVar("IMX_SPSDK_REVISION")
+        if revision not in soc.get("pqc_revisions", ()):
+            bb.fatal("PQC signing is not supported for %s (%s, revision %s)\n"
+                     'Set IMX_SIGN_PQC_ENABLE = "0" to use classical AHAB signing' %
+                     (d.getVar("MACHINE"), d.getVar("IMX_SPSDK_FAMILY"), revision))
+    # Check boot image selections before compilation
+    list(imx_sign_images(d))
+    imx_validate_signing_keys(d)
     # BitBake does not walk directory symlinks when hashing inputs
     d.setVar("IMX_SIGN_KEYDIR", os.path.realpath(d.getVar("IMX_SIGN_KEYDIR")))
+    if d.getVar("IMX_SIGN_PQC_ENABLE") == "1":
+        d.setVar("IMX_SIGN_PQC_KEYDIR", os.path.realpath(d.getVar("IMX_SIGN_PQC_KEYDIR")))
+        d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_PQC_KEYDIR"))
 
-    d.appendVar("DEPENDS", " python3-spsdk-native")
+    d.appendVar("DEPENDS", " python3-spsdk-native python3-spsdk-pqc-native")
     d.appendVarFlag("do_compile", "cleandirs", " " + d.getVar("IMX_SIGN_UNSIGNED_DIR"))
     d.appendVarFlag("do_compile", "postfuncs", " imx_sign_save_unsigned")
     # Copy before deploy's sstate postfunc publishes DEPLOYDIR
@@ -233,9 +282,14 @@ python __anonymous() {
 
 python imx_sign_ahab() {
     import argparse
+    import json
     from pathlib import Path
 
+    from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
+    from spsdk.crypto.keys import PrivateKey
+    from spsdk.crypto.utils import extract_public_key
     from spsdk.exceptions import SPSDKError
+    from spsdk.image.ahab.ahab_container import AHABContainerV2
     from spsdk.image.ahab.ahab_data import FlagsSrkSet
     from spsdk.image.ahab.ahab_image import AHABImage
     from spsdk.image.ahab.utils import ahab_sign_image
@@ -247,7 +301,7 @@ python imx_sign_ahab() {
     from spsdk.utils.verifier import VerifierResult
 
 
-    def load_config(path, key_dir, family, revision):
+    def load_config(path, key_dir, family, revision, pqc_key_dir=None, pqc_profiles=()):
         family = FamilyRevision(family, revision).name
         supported = {device.name for device in AHABImage.get_supported_families()}
         if family not in supported:
@@ -263,27 +317,53 @@ python imx_sign_ahab() {
             raise ValueError("Set an explicit silicon revision")
         if config.get("srk_set") != "oem":
             raise ValueError("Signing config must set srk_set: oem")
-        if any(name in config for name in ("blob", "certificate", "signer_#2")):
-            raise ValueError("Encryption, certificate delegation and PQC are not supported")
+        if any(name in config for name in ("blob", "certificate")):
+            raise ValueError("Encryption and certificate delegation are not supported")
         table = config.get("srk_table", {})
-        if "srk_table_#2" in table:
-            raise ValueError("PQC signing is not supported")
-        keys = table.get("srk_array", [])
-        if len(keys) != 4:
-            raise ValueError("srk_table.srk_array must contain four public keys or certificates")
+        if not isinstance(table, dict):
+            raise ValueError("srk_table must be a mapping")
+        second = "srk_table_#2" in table
+        if second != ("signer_#2" in config):
+            raise ValueError("signer_#2 and srk_table.srk_table_#2 must be supplied together")
+        if pqc_key_dir is not None and not second:
+            raise ValueError("IMX_SIGN_PQC_ENABLE is 1 but the signing config has no second signer")
+        if second:
+            if (family, revision) not in map(tuple, pqc_profiles):
+                raise ValueError(f"Second key set is not supported for {family}, {revision}")
+            if 2 not in AHABImage(FamilyRevision(family, revision)).chip_config.container_types:
+                raise ValueError(f"Second key set requires AHAB v2 support for {family}, {revision}")
+            if not IS_DILITHIUM_SUPPORTED:
+                raise ValueError("Second key set requires spsdk-pqc")
 
-        def key_path(value):
+        def key_path(value, directory, setting):
             if not isinstance(value, str) or not value or ";" in value or value.startswith("type="):
-                raise ValueError("Use local key paths in signer and srk_table.srk_array")
+                raise ValueError("Use local key paths for signers and SRK tables")
             resolved = (path.parent / value).resolve()
-            if not resolved.is_relative_to(key_dir.resolve()) or not resolved.is_file():
-                raise ValueError(f"Signing key must be a file inside IMX_SIGN_KEYDIR: {value}")
+            if not resolved.is_relative_to(directory.resolve()) or not resolved.is_file():
+                raise ValueError(f"Signing key must be a file inside {setting}: {value}")
             return str(resolved)
 
-        config["signer"] = key_path(config.get("signer"))
-        table["srk_array"] = [key_path(key) for key in keys]
+        key_sets = [("signer", "srk_table", table, key_dir, "IMX_SIGN_KEYDIR")]
+        if second:
+            key_sets.append(("signer_#2", "srk_table.srk_table_#2", table["srk_table_#2"],
+                             pqc_key_dir or key_dir,
+                             "IMX_SIGN_PQC_KEYDIR" if pqc_key_dir else "IMX_SIGN_KEYDIR"))
+        for signer, name, srk_table, directory, setting in key_sets:
+            if not isinstance(srk_table, dict):
+                raise ValueError(f"{name} must be a mapping")
+            keys = srk_table.get("srk_array", [])
+            if not isinstance(keys, list) or len(keys) != 4:
+                raise ValueError(f"{name}.srk_array must contain four public keys or certificates")
+            config[signer] = key_path(config.get(signer), directory, setting)
+            srk_table["srk_array"] = [key_path(key, directory, setting) for key in keys]
         config.check(AHABImage.get_signing_validation_schemas(FamilyRevision(family, revision)),
                      check_unknown_props=True)
+        for signer, name, srk_table, directory, setting in key_sets:
+            # Reject encrypted keys without opening an interactive password prompt
+            private = PrivateKey.load(config[signer])
+            public_keys = [extract_public_key(key) for key in srk_table["srk_array"]]
+            if not private.verify_public_key(public_keys[config.get_int("used_srk_id", 0)]):
+                raise ValueError(f"{signer} does not match {name}.srk_array at used_srk_id")
         return config
 
 
@@ -306,6 +386,8 @@ python imx_sign_ahab() {
         oem = [c for c in before if signable(c)]
         if not oem:
             raise ValueError("Boot image has no OEM containers to sign")
+        if "signer_#2" in config and any(not isinstance(c, AHABContainerV2) for c in oem):
+            raise ValueError("Second key set requires AHAB v2 OEM containers")
         if any(image.flags_is_encrypted for c in oem for image in c.image_array):
             raise ValueError("Encrypted OEM images are not supported")
         data, _ = ahab_sign_image(str(source), config, memory_type)
@@ -324,6 +406,8 @@ python imx_sign_ahab() {
             if signable(old):
                 if new.flag_srk_set != FlagsSrkSet.OEM:
                     raise ValueError("An OEM container was left unsigned")
+                if "signer_#2" in config and new.signature_block.signature_2 is None:
+                    raise ValueError("An OEM container is missing the requested second signature")
                 # SPSDK treats dummy or unverifiable signatures as warnings
                 authenticity = new.signature_block.verify_container_authenticity(
                     new.get_signature_data())
@@ -332,9 +416,10 @@ python imx_sign_ahab() {
                 signed_oem.append(new)
             elif old.export() != new.export():
                 raise ValueError("Signing changed a non-OEM container")
-        hashes = {container.get_srk_hash(0) for container in signed_oem}
-        if len(hashes) != 1 or not all(hashes):
-            raise ValueError("OEM containers must use the same non-empty SRK hash")
+        for table in range(2 if "signer_#2" in config else 1):
+            hashes = {container.get_srk_hash(table) for container in signed_oem}
+            if len(hashes) != 1 or not all(hashes):
+                raise ValueError(f"OEM containers must use the same non-empty SRK hash for table {table}")
         fuse_dir = destination.with_name(destination.name + ".fuses")
         fuse_dir.mkdir(parents=True, exist_ok=True)
         # Use the same SPSDK export as nxpimage ahab sign --fuse-scripts
@@ -350,9 +435,12 @@ python imx_sign_ahab() {
             parser.add_argument("--" + option, type=Path, required=True)
         for option in ("family", "revision", "memory-type"):
             parser.add_argument("--" + option, required=True)
+        parser.add_argument("--pqc-key-dir", type=Path)
+        parser.add_argument("--pqc-profiles", type=json.loads, default=[])
         args = parser.parse_args()
         try:
-            config = load_config(args.config, args.key_dir, args.family, args.revision)
+            config = load_config(args.config, args.key_dir, args.family, args.revision,
+                                 args.pqc_key_dir, args.pqc_profiles)
             sign_image(config, args.input, args.output, args.memory_type)
         except (SPSDKError, ValueError, OSError) as error:
             parser.exit(1, f"imx-boot signing failed: {error}\n")
