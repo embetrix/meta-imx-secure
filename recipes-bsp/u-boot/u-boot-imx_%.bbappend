@@ -9,6 +9,10 @@ SRC_URI:append = " file://fit.cfg \
 
 do_uboot_assemble_fitimage[file-checksums] += "${@imx_fit_key_checksums(d)}"
 
+python __anonymous() {
+    imx_validate_fit_signing_keys(d)
+}
+
 # OE-Core only warns when the control DTB is missing
 concat_dtb:prepend() {
     test -f "${UBOOT_DTB_BINARY}" || bbfatal "Missing U-Boot control DTB for FIT verification"

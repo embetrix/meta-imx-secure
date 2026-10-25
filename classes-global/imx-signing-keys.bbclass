@@ -24,6 +24,12 @@ IMX_SIGN_PQC_SRK_FILES ??= "${IMX_SIGN_PQC_KEYDIR}/srk0.pub \
                             ${IMX_SIGN_PQC_KEYDIR}/srk3.pub"
 IMX_SIGN_PQC_HASH_ALGORITHM ??= "sha3_512"
 
+def imx_validate_signing_flags(d):
+    for name in ("IMX_SIGN_ENABLE", "IMX_SIGN_PQC_ENABLE", "IMX_SIGN_DEBUG", "UBOOT_SIGN_ENABLE"):
+        value = d.getVar(name)
+        if value is not None and value not in ("0", "1"):
+            bb.fatal("%s must be 0 or 1" % name)
+
 def imx_fit_key_checksums(d, prefix="UBOOT_SIGN"):
     import os
 
@@ -33,36 +39,33 @@ def imx_fit_key_checksums(d, prefix="UBOOT_SIGN"):
                                  d.getVar(prefix + "_KEYNAME") + suffix) + ":True"
                     for suffix in (".key", ".crt"))
 
-def imx_validate_fit_signing_keys(d):
+def imx_validate_fit_signing_keys(d, prefix="UBOOT_SIGN"):
     import os
     import re
 
-    enabled = d.getVar("UBOOT_SIGN_ENABLE") or "0"
-    if enabled == "0":
+    enabled = d.getVar(prefix + "_ENABLE")
+    if enabled in (None, "0"):
         return
     if enabled != "1":
-        bb.fatal("UBOOT_SIGN_ENABLE must be 0 or 1")
-    keydir = d.getVar("UBOOT_SIGN_KEYDIR") or ""
-    keyname = d.getVar("UBOOT_SIGN_KEYNAME") or ""
+        bb.fatal("%s_ENABLE must be 0 or 1" % prefix)
+    keydir = d.getVar(prefix + "_KEYDIR") or ""
+    keyname = d.getVar(prefix + "_KEYNAME") or ""
     if not os.path.isabs(keydir) or any(c.isspace() for c in keydir) or ":" in keydir:
-        bb.fatal("UBOOT_SIGN_KEYDIR must be an absolute path without spaces or colons")
+        bb.fatal("%s_KEYDIR must be an absolute path without spaces or colons" % prefix)
     if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*", keyname):
-        bb.fatal("UBOOT_SIGN_KEYNAME must be a filename without a path")
+        bb.fatal("%s_KEYNAME must be a filename without a path" % prefix)
     for suffix in (".key", ".crt"):
         path = os.path.join(keydir, keyname + suffix)
-        if not os.path.isfile(path) or not os.access(path, os.R_OK):
-            bb.fatal("Missing FIT signing key or certificate: %s\n"
+        if not os.path.isfile(path) or not os.access(path, os.R_OK) or not os.path.getsize(path):
+            bb.fatal("Missing, empty or unreadable FIT signing key or certificate: %s\n"
                      "Run tools/genkey-helper.sh <KEY_DIR> to generate FIT keys" % path)
 
 def imx_validate_signing_keys(d):
     import os
 
-    if d.getVar("IMX_SIGN_ENABLE") == "0":
-        return
+    imx_validate_signing_flags(d)
     if d.getVar("IMX_SIGN_ENABLE") != "1":
-        bb.fatal("IMX_SIGN_ENABLE must be 0 or 1")
-    if d.getVar("IMX_SIGN_PQC_ENABLE") not in ("0", "1"):
-        bb.fatal("IMX_SIGN_PQC_ENABLE must be 0 or 1")
+        return
 
     errors = []
     keydir = d.getVar("IMX_SIGN_KEYDIR") or ""
@@ -105,8 +108,13 @@ def imx_validate_signing_keys(d):
                  "\n\nGenerate keys with:\n  " + command + "tools/genkey-helper.sh <KEY_DIR>\n\n"
                  "Then build with:\n  kas build kas-imx-secure.yml:kas-signing-keys.yml")
 
-addhandler imx_check_signing_keys
+addhandler imx_check_signing_flags imx_check_signing_keys
+imx_check_signing_flags[eventmask] = "bb.event.ConfigParsed"
 imx_check_signing_keys[eventmask] = "bb.event.BuildStarted"
+
+python imx_check_signing_flags() {
+    imx_validate_signing_flags(e.data)
+}
 
 python imx_check_signing_keys() {
     imx_validate_signing_keys(e.data)
