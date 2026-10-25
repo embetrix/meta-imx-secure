@@ -29,41 +29,53 @@
 # Encryption, certificate delegation and PQC signing are not supported yet
 # The u-boot-imx bbappend enables boot authentication when signing is enabled
 
-# Match specific SoCs before shared BSP overrides
+# Keep specific SoCs before shared BSP overrides
+# revision overrides IMX_SOC_REV for fixed SPSDK profiles
+# pqc_revisions lists revisions that support a second signer
+def imx_sign_soc_data():
+    return {
+        "mx937": {"format": "ahab", "family": "mimx93754"},
+        "mx952": {"format": "ahab", "family": "mimx95294", "pqc_revisions": ("a0",)},
+        "mx943": {"format": "ahab", "family": "mimx943", "pqc_revisions": ("a0",)},
+        "mx95": {"format": "ahab", "family": "mimx9596", "pqc_revisions": ("b0",)},
+        "mx93": {"format": "ahab", "family": "mimx9352"},
+        "mx91": {"format": "ahab", "family": "mimx9131"},
+        "mx8ulp": {"format": "ahab", "family": "mimx8ulp"},
+        "mx8dxl": {"format": "ahab", "family": "mimx8dxl", "revision": "a0"},
+        "mx8dx": {"format": "ahab", "family": "mimx8qxp", "revision": "a0"},
+        "mx8qxp": {"format": "ahab", "family": "mimx8qxp", "revision": "a0"},
+        "mx8qm": {"format": "ahab", "family": "mimx8qm", "revision": "a0"},
+        "mx8mp": {"format": "hab4"},
+        "mx8mn": {"format": "hab4"},
+        "mx8mm": {"format": "hab4"},
+        "mx8mq": {"format": "hab4"},
+    }
+
 def imx_sign_soc(d):
     overrides = (d.getVar("MACHINEOVERRIDES") or "").split(":")
-    for soc in ("mx937", "mx952", "mx943", "mx95", "mx93", "mx91",
-                "mx8ulp", "mx8dxl", "mx8dx", "mx8qxp", "mx8qm",
-                "mx8mp", "mx8mn", "mx8mm", "mx8mq"):
+    for soc in imx_sign_soc_data():
         if soc in overrides or soc + "-generic-bsp" in overrides:
             return soc
     return ""
 
-IMX_SIGN_SOC ??= "${@imx_sign_soc(d)}"
-IMX_SIGN_FORMAT ??= "${@'hab4' if d.getVar('IMX_SIGN_SOC') in ('mx8mq', 'mx8mm', 'mx8mn', 'mx8mp') else ('ahab' if d.getVar('IMX_SIGN_SOC') else '')}"
-IMX_SIGN_BACKEND ??= "${@{'ahab': 'spsdk', 'hab4': 'cst'}.get(d.getVar('IMX_SIGN_FORMAT'), '')}"
+def imx_sign_format(d):
+    return imx_sign_soc_data().get(d.getVar("IMX_SIGN_SOC"), {}).get("format", "")
 
 def imx_sign_family(d):
-    return {
-        "mx8qm": "mimx8qm",
-        "mx8qxp": "mimx8qxp",
-        "mx8dx": "mimx8qxp",
-        "mx8dxl": "mimx8dxl",
-        "mx8ulp": "mimx8ulp",
-        "mx91": "mimx9131",
-        "mx93": "mimx9352",
-        "mx937": "mimx93754",
-        "mx943": "mimx943",
-        "mx95": "mimx9596",
-        "mx952": "mimx95294",
-    }.get(d.getVar("IMX_SIGN_SOC"), "")
+    return imx_sign_soc_data().get(d.getVar("IMX_SIGN_SOC"), {}).get("family", "")
+
+def imx_sign_pqc_profiles():
+    return [(soc["family"], revision) for soc in imx_sign_soc_data().values()
+            if soc["format"] == "ahab"
+            for revision in soc.get("pqc_revisions", ())]
 
 def imx_sign_revision(d):
-    # SPSDK uses one a0 profile for these families, separate from the BSP silicon revision
-    if d.getVar("IMX_SIGN_SOC") in ("mx8qm", "mx8qxp", "mx8dx", "mx8dxl"):
-        return "a0"
-    return (d.getVar("IMX_SOC_REV") or "").lower()
+    return imx_sign_soc_data().get(d.getVar("IMX_SIGN_SOC"), {}).get(
+        "revision", (d.getVar("IMX_SOC_REV") or "").lower())
 
+IMX_SIGN_SOC ??= "${@imx_sign_soc(d)}"
+IMX_SIGN_FORMAT ??= "${@imx_sign_format(d)}"
+IMX_SIGN_BACKEND ??= "${@{'ahab': 'spsdk', 'hab4': 'cst'}.get(d.getVar('IMX_SIGN_FORMAT'), '')}"
 IMX_SPSDK_FAMILY ??= "${@imx_sign_family(d)}"
 IMX_SPSDK_REVISION ??= "${@imx_sign_revision(d)}"
 
