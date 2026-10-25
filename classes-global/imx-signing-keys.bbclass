@@ -1,28 +1,8 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 #
-# Shared AHAB and FIT key defaults and checks
+# Shared AHAB and FIT key checks
 # Generate keys and a kas fragment with tools/genkey-helper.sh
-
-IMX_SIGN_ENABLE ??= "0"
-IMX_SIGN_KEYDIR ??= ""
-IMX_SIGN_CONFIG ??= ""
-IMX_SIGN_SRK_ID ??= "0"
-IMX_SIGN_PRIVATE_KEY ??= "${IMX_SIGN_KEYDIR}/srk${IMX_SIGN_SRK_ID}.pem"
-IMX_SIGN_SRK_FILES ??= "${IMX_SIGN_KEYDIR}/srk0.pub \
-                        ${IMX_SIGN_KEYDIR}/srk1.pub \
-                        ${IMX_SIGN_KEYDIR}/srk2.pub \
-                        ${IMX_SIGN_KEYDIR}/srk3.pub"
-IMX_SIGN_HASH_ALGORITHM ??= "default"
-
-IMX_SIGN_PQC_ENABLE ??= "0"
-IMX_SIGN_PQC_KEYDIR ??= "${IMX_SIGN_KEYDIR}/mldsa"
-IMX_SIGN_PQC_PRIVATE_KEY ??= "${IMX_SIGN_PQC_KEYDIR}/srk${IMX_SIGN_SRK_ID}.pem"
-IMX_SIGN_PQC_SRK_FILES ??= "${IMX_SIGN_PQC_KEYDIR}/srk0.pub \
-                            ${IMX_SIGN_PQC_KEYDIR}/srk1.pub \
-                            ${IMX_SIGN_PQC_KEYDIR}/srk2.pub \
-                            ${IMX_SIGN_PQC_KEYDIR}/srk3.pub"
-IMX_SIGN_PQC_HASH_ALGORITHM ??= "sha3_512"
 
 def imx_validate_signing_flags(d):
     for name in ("IMX_SIGN_ENABLE", "IMX_SIGN_PQC_ENABLE", "IMX_SIGN_DEBUG", "UBOOT_SIGN_ENABLE"):
@@ -108,15 +88,14 @@ def imx_validate_signing_keys(d):
                  "\n\nGenerate keys with:\n  " + command + "tools/genkey-helper.sh <KEY_DIR>\n\n"
                  "Then build with:\n  kas build kas-imx-secure.yml:kas-signing-keys.yml")
 
-addhandler imx_check_signing_flags imx_check_signing_keys
+addhandler imx_check_signing_flags imx_check_fit_signing_keys
 imx_check_signing_flags[eventmask] = "bb.event.ConfigParsed"
-imx_check_signing_keys[eventmask] = "bb.event.BuildStarted"
+imx_check_fit_signing_keys[eventmask] = "bb.event.BuildStarted"
 
 python imx_check_signing_flags() {
     imx_validate_signing_flags(e.data)
 }
 
-python imx_check_signing_keys() {
-    imx_validate_signing_keys(e.data)
+python imx_check_fit_signing_keys() {
     imx_validate_fit_signing_keys(e.data)
 }

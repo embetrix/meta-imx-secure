@@ -34,6 +34,26 @@
 # Encryption and certificate delegation are not supported yet
 # The u-boot-imx bbappend enables boot authentication when signing is enabled
 
+IMX_SIGN_ENABLE ??= "0"
+IMX_SIGN_KEYDIR ??= ""
+IMX_SIGN_CONFIG ??= ""
+IMX_SIGN_SRK_ID ??= "0"
+IMX_SIGN_PRIVATE_KEY ??= "${IMX_SIGN_KEYDIR}/srk${IMX_SIGN_SRK_ID}.pem"
+IMX_SIGN_SRK_FILES ??= "${IMX_SIGN_KEYDIR}/srk0.pub \
+                        ${IMX_SIGN_KEYDIR}/srk1.pub \
+                        ${IMX_SIGN_KEYDIR}/srk2.pub \
+                        ${IMX_SIGN_KEYDIR}/srk3.pub"
+IMX_SIGN_HASH_ALGORITHM ??= "default"
+
+IMX_SIGN_PQC_ENABLE ??= "0"
+IMX_SIGN_PQC_KEYDIR ??= "${IMX_SIGN_KEYDIR}/mldsa"
+IMX_SIGN_PQC_PRIVATE_KEY ??= "${IMX_SIGN_PQC_KEYDIR}/srk${IMX_SIGN_SRK_ID}.pem"
+IMX_SIGN_PQC_SRK_FILES ??= "${IMX_SIGN_PQC_KEYDIR}/srk0.pub \
+                            ${IMX_SIGN_PQC_KEYDIR}/srk1.pub \
+                            ${IMX_SIGN_PQC_KEYDIR}/srk2.pub \
+                            ${IMX_SIGN_PQC_KEYDIR}/srk3.pub"
+IMX_SIGN_PQC_HASH_ALGORITHM ??= "sha3_512"
+
 # Keep specific SoCs before shared BSP overrides
 # revision overrides IMX_SOC_REV for fixed SPSDK profiles
 # pqc_revisions lists revisions that support a second signer

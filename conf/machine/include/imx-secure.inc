@@ -2,7 +2,7 @@
 
 INHERIT += "imx-signing-keys"
 
-UBOOT_SIGN_ENABLE ?= "${IMX_SIGN_ENABLE}"
+UBOOT_SIGN_ENABLE ?= "${@d.getVar('IMX_SIGN_ENABLE') or '0'}"
 UBOOT_SIGN_KEYDIR ?= ""
 UBOOT_SIGN_KEYNAME ?= "fit"
 FIT_SIGN_ALG ?= "rsa2048"
