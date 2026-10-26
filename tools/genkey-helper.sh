@@ -118,7 +118,11 @@ case "$KEY_TYPE" in
     *) usage >&2; die "Unsupported key type: $KEY_TYPE" ;;
 esac
 case "$PQC_KEY_TYPE" in
-    none|mldsa44|mldsa65|mldsa87) ;;
+    none) ;;
+    mldsa44|mldsa65|mldsa87)
+        openssl list -signature-algorithms 2>/dev/null | grep -Fq "ML-DSA-${PQC_KEY_TYPE#mldsa}" ||
+            die "OpenSSL does not support $PQC_KEY_TYPE. Install OpenSSL with ML-DSA support"
+        ;;
     *) usage >&2; die "Unsupported PQC key type: $PQC_KEY_TYPE" ;;
 esac
 # Keep generated BitBake assignments and kas paths literal
