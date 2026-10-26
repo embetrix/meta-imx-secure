@@ -5,32 +5,47 @@
 # AHAB only, HABv4 signing is not implemented
 # Family and revision support depends on the installed SPSDK version
 #
-# Sign OEM containers and preserve NXP and V2X containers
-# Verify signatures, image hashes and unchanged payloads before deployment
+# Sign unsigned and OEM containers, preserving NXP and V2X containers
+# Verify OEM signatures, image hashes and unchanged image data and metadata
+# Replace build outputs only after all boot image variants pass verification
 # Deploy signed images under the normal imx-boot filenames
 # Deploy SPSDK SRK hashes and fuse scripts in <image>.fuses/
 # This class does not program SRK hash fuses or change the device lifecycle
 #
-# Enable in local.conf or distro configuration:
-# Generate keys and a kas fragment with tools/genkey-helper.sh <KEY_DIR>
+# Generate keys and a kas fragment with tools/genkey-helper.sh <KEY_DIR>, then run:
+# kas build kas-imx-secure.yml:kas-signing-keys.yml
+# Or enable in local.conf or distro configuration with existing keys:
 # INHERIT += "imx-signing-keys"
 # IMX_SIGN_ENABLE = "1"
 # IMX_SIGN_KEYDIR = "/path/to/signing-keys"
 # Set IMX_SIGN_DEBUG = "1" to show signing details in the build console
 #
-# Generate ahab-sign.yaml from the template below and the machine settings
-# Default keys are srk0.pub through srk3.pub and srk0.pem
-# Set IMX_SIGN_SRK_ID to select another private key
-# Override IMX_SIGN_PRIVATE_KEY and IMX_SIGN_SRK_FILES for other filenames
-# Set IMX_SIGN_CONFIG only when supplying a custom YAML file
-# Override IMX_SPSDK_FAMILY and IMX_SPSDK_REVISION for a specific SPSDK profile
+# By default, generate ${T}/ahab-sign.yaml from the settings below
+# IMX_SIGN_SRK_FILES lists exactly four public keys or certificates in SRK order
+# Defaults are srk0.pub through srk3.pub inside IMX_SIGN_KEYDIR
+# IMX_SIGN_SRK_ID selects entry 0 to 3 and defaults to 0
+# IMX_SIGN_PRIVATE_KEY defaults to srk${IMX_SIGN_SRK_ID}.pem and must match that entry
+# Key paths may be absolute or relative to their configured key directory
+# Keys must stay inside that directory so changes trigger signing
+# Private keys must be local, unencrypted files
+#
+# Set IMX_SIGN_PQC_ENABLE = "1" to add a second SRK table and signer
+# IMX_SIGN_PQC_KEYDIR defaults to ${IMX_SIGN_KEYDIR}/mldsa
+# IMX_SIGN_PQC_SRK_FILES and IMX_SIGN_PQC_PRIVATE_KEY use the same naming defaults
+# Both tables use IMX_SIGN_SRK_ID to select the signing key
+# IMX_SIGN_HASH_ALGORITHM defaults to "default", IMX_SIGN_PQC_HASH_ALGORITHM to "sha3_512"
+#
+# IMX_SIGN_CONFIG selects a custom YAML file instead of the generated settings
+# It must set srk_set: oem, with family and revision matching the build if supplied
+# Relative key paths in custom YAML are resolved from the YAML directory
+# Keys must still be inside IMX_SIGN_KEYDIR or the enabled IMX_SIGN_PQC_KEYDIR
+# Key directories and IMX_SIGN_CONFIG must be absolute paths without spaces or colons
+#
+# IMX_SPSDK_FAMILY and IMX_SPSDK_REVISION default to the machine's SoC settings
+# Override them for a specific SPSDK profile, using an explicit revision, not "latest"
 # List profiles with nxpimage ahab get-families -c get-template
-# Set IMX_SIGN_PQC_ENABLE = "1" to add a second signer from IMX_SIGN_PQC_KEYDIR
-# PQC keys default to srk0.pub through srk3.pub and srk${IMX_SIGN_SRK_ID}.pem
-# Set IMX_SIGN_HASH_ALGORITHM and IMX_SIGN_PQC_HASH_ALGORITHM for each SRK table
-# Keep keys inside their configured key directories so changes trigger signing
 # SoC formats, SPSDK profiles and PQC revisions are listed in imx_sign_soc_data
-# Second key sets require a family, revision and OEM containers supporting AHAB v2
+# Second key sets require a listed family/revision pair and AHAB v2 OEM containers
 # Encryption and certificate delegation are not supported yet
 # The u-boot-imx bbappend enables boot authentication when signing is enabled
 
@@ -105,7 +120,7 @@ IMX_SPSDK_FAMILY ??= "${@imx_sign_family(d)}"
 IMX_SPSDK_REVISION ??= "${@imx_sign_revision(d)}"
 
 # Raw SD/eMMC flash.bin files start at the container, without disk padding
-# Set a UBOOT_CONFIG flag for other layouts, for example [fspi] = "flexspi_nor"
+# Override per UBOOT_CONFIG entry, for example IMX_SPSDK_MEMORY_TYPE[fspi] = "flexspi_nor"
 IMX_SPSDK_MEMORY_TYPE ??= "serial_downloader"
 
 IMX_SIGN_DEBUG ??= "0"
