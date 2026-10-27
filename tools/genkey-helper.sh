@@ -23,7 +23,7 @@ usage() {
     echo "Choose a key type supported by your target SoC"
     echo "FIT key types: rsa2048 (default), rsa3072, rsa4096"
     echo "PQC key types: none (default), mldsa44, mldsa65, mldsa87"
-    echo "PQC keys need OpenSSL 3.5 with oqskeypair support and a supported SoC revision"
+    echo "PQC keys need OpenSSL 3.5 or newer with ML-DSA support and a supported SoC revision"
 }
 
 hsm_notice() {
@@ -53,7 +53,8 @@ generate_srk_keys() {
         mldsa44|mldsa65|mldsa87)
             algorithm="ML-DSA-${srk_type#mldsa}"
             option=-provparam
-            # Include the public key so SPSDK can match the signer to its SRK
+            # OpenSSL's built-in oqskeypair format includes the public key for SPSDK
+            # No OQS provider is needed
             option_value=ml-dsa.output_formats=oqskeypair
             pattern="$algorithm Public-Key:"
             ;;
