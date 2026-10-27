@@ -2,11 +2,11 @@
 SUMMARY = "NXP SPSDK image signing tools"
 HOMEPAGE = "https://github.com/nxp-mcuxpresso/spsdk"
 LICENSE = "BSD-3-Clause"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=71f9dfe2f5397e150a180724f0270d11"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=863e3c0c79e2589ac9d16c3918e115d1"
 
 SRC_URI += "file://0001-use-yocto-dependencies.patch"
 
-SRC_URI[sha256sum] = "a98c6a9054c6aeb544e8bdc7ee00e08d2dcc6f9b7998da5b7dd4c71f07dcd46f"
+SRC_URI[sha256sum] = "cca81c81fc6a8614ac38ef974b17da2d41ae2f51e8ab8cf952ab7849dfd6174c"
 
 inherit pypi python_setuptools_build_meta dos2unix
 
@@ -25,8 +25,8 @@ RDEPENDS:${PN} += " \
     python3-click-command-tree \
     python3-click-option-group \
     python3-colorama \
-    python3-crcmod \
-    python3-cryptography \
+    python3-crcmod-plus \
+    python3-cryptography (>= 48.0.1) \
     python3-deepmerge \
     python3-fastjsonschema \
     python3-filelock \
@@ -42,7 +42,7 @@ RDEPENDS:${PN} += " \
     python3-pyyaml \
     python3-requests \
     python3-ruamel-yaml \
-    python3-setuptools \
+    python3-setuptools (>= 83.0.0) \
     python3-setuptools-scm \
     python3-sly \
     python3-typing-extensions \

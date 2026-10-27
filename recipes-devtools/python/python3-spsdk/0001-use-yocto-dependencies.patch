@@ -5,23 +5,17 @@ Subject: [PATCH] spsdk: package image signing tools for Wrynose
 
 Only install nxpimage and nxpcrypto. Load the EdgeLock transport when its
 CLI option is used so signing does not need libuuu. Wrynose supplies a
-pure Python YAML parser and newer setuptools, chardet and
-importlib-metadata.
+pure Python YAML parser and newer chardet and importlib-metadata.
 
 Upstream-Status: Inappropriate [signing-only package]
 
 Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
 ---
- pyproject.toml                         | 19 -------------------
- requirements.txt                       | 11 +++--------
- spsdk/apps/utils/common_cli_options.py |  5 ++++-
- 3 files changed, 7 insertions(+), 28 deletions(-)
 
 diff --git a/pyproject.toml b/pyproject.toml
-index f938fe7..1471658 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -61,27 +61,8 @@ all = [
+@@ -64,27 +64,8 @@
  ]
  
  [project.scripts]
@@ -50,7 +44,6 @@ index f938fe7..1471658 100644
  [build-system]
  requires = ["setuptools_scm<10", "setuptools>=77", "wheel"]
 diff --git a/requirements.txt b/requirements.txt
-index 502d479..0ec6657 100644
 --- a/requirements.txt
 +++ b/requirements.txt
 @@ -1,7 +1,7 @@
@@ -62,44 +55,42 @@ index 502d479..0ec6657 100644
  click-command-tree<2
  click-option-group<1,>=0.3.0
  click!=8.1.4,!=8.3,<9,>=7.1
-@@ -13,10 +13,8 @@ deepmerge<3
+@@ -13,10 +13,8 @@
  fastjsonschema<3,>=2.15.1
  filelock<4,>=3
  hexdump<4
 -importlib-metadata<9
 +importlib-metadata<10
- libusbsio<3,>=2.2.0
+ libusbsio<3,>=2.2.1
 -libuuu<2,>=1.5.239
 -oscrypto<2
  packaging<27,>=23.2
- platformdirs<5,>=3.9.1
+ platformdirs<4.12,>=3.9.1 # 4.12 changed private API used by SPSDKPlatformDirs
  prettytable<4,>=3.12
-@@ -24,11 +22,8 @@ pyasn1<1,>=0.6
+@@ -24,11 +22,8 @@
  pyserial<4,>=3.1
  requests<3,>=2.32.3
  ruamel.yaml<1,>=0.17
 -ruamel.yaml.clib!=0.2.13,!=0.2.15,<1  # 0.2.13: missing header files for build, 0.2.15: Black Duck detection issues
  setuptools_scm<10
--setuptools<81,>75
-+setuptools>75
+ setuptools<84,>=83.0.0  # >=83.0.0: fix MANIFEST.in exclusion bypass via Unicode NFC/NFD collision (GHSA / VU#604762)
  sly<1
--spsdk-mcu-link<1,>=0.6.9
+-spsdk-mcu-link<1,>=0.6.11
 -spsdk-pyocd<1,>=0.2.0
  typing-extensions<5
  x690<2,>=1.0
 diff --git a/spsdk/apps/utils/common_cli_options.py b/spsdk/apps/utils/common_cli_options.py
-index 14983d2..42df6e0 100644
 --- a/spsdk/apps/utils/common_cli_options.py
 +++ b/spsdk/apps/utils/common_cli_options.py
-@@ -29,7 +29,6 @@ from spsdk import __version__ as spsdk_version
- from spsdk.apps.utils import spsdk_logger
+@@ -30,7 +30,6 @@
  from spsdk.apps.utils.interface_helper import load_interface_config
  from spsdk.apps.utils.utils import INT, SPSDKAppError, make_table_from_items
+ from spsdk.debuggers.debug_probe import DebugProbeProtocol
 -from spsdk.el2go.interface import EL2GOInterfaceHandler
  from spsdk.exceptions import SPSDKError, SPSDKValueError
  from spsdk.mboot.interfaces.uart import MbootUARTInterface
  from spsdk.mboot.protocol.base import MbootProtocolBase
-@@ -348,6 +347,8 @@ def interface_plugin_option() -> Callable[[FC], FC]:
+@@ -355,6 +354,8 @@
  
  def el2go_interface_option() -> Callable[[FC], FC]:
      """Click decorator handling El2Go interface configuration."""
@@ -108,7 +99,7 @@ index 14983d2..42df6e0 100644
      return click.option(
          "-d",
          "--device",
-@@ -1054,6 +1055,8 @@ def spsdk_el2go_interface(
+@@ -1129,6 +1130,8 @@
  
      :return: Click decorator.
      """
