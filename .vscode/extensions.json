@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "openai.chatgpt",
+        "anthropic.claude-code",
+        "yocto-project.yocto-bitbake",
+        "eamodio.gitlens"
+    ]
+}
