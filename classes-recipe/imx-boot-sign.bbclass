@@ -292,6 +292,11 @@ python __anonymous() {
     if d.getVar("IMX_SIGN_PQC_ENABLE") == "1":
         soc = imx_sign_soc_data().get(d.getVar("IMX_SIGN_SOC"), {})
         revision = d.getVar("IMX_SPSDK_REVISION")
+        if d.getVar("IMX_SPSDK_FAMILY") == "mimx9596" and revision in ("a0", "a1"):
+            bb.fatal("PQC signing with ML-DSA is not supported for i.MX95 %s\n"
+                     "Check /sys/devices/soc0/revision on the board: Linux revision 2.0 is B0 (b0)\n"
+                     "Use the b0 profile only for B0 silicon, or set IMX_SIGN_PQC_ENABLE = \"0\" "
+                     "to use classical AHAB signing" % revision)
         if revision not in soc.get("pqc_revisions", ()):
             bb.fatal("PQC signing is not supported for %s (%s, revision %s)\n"
                      'Set IMX_SIGN_PQC_ENABLE = "0" to use classical AHAB signing' %
