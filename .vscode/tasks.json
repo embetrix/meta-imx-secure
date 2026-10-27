@@ -1,0 +1,60 @@
+{
+    "version": "2.0.0",
+    "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+            "KAS_MACHINE": "${input:machine}"
+        }
+    },
+    "tasks": [
+        {
+            "label": "kas: Build image",
+            "type": "process",
+            "command": "kas",
+            "args": [
+                "build",
+                "kas-imx-secure.yml:kas-signing-keys.yml"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "kas: Check recipes",
+            "type": "process",
+            "command": "kas",
+            "args": [
+                "shell",
+                "kas-imx-secure.yml:kas-signing-keys.yml",
+                "-c",
+                "bitbake -p"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "kas: Open shell",
+            "type": "process",
+            "command": "kas",
+            "args": [
+                "shell",
+                "kas-imx-secure.yml:kas-signing-keys.yml"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated"
+            },
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "machine",
+            "type": "promptString",
+            "description": "Yocto target machine",
+            "default": "imx95-15x15-lpddr4x-frdm"
+        }
+    ]
+}
