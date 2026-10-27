@@ -72,12 +72,12 @@ IMX_SIGN_PQC_HASH_ALGORITHM ??= "sha3_512"
 
 # Keep specific SoCs before shared BSP overrides
 # revision overrides IMX_SOC_REV for fixed SPSDK profiles
-# pqc_revisions lists revisions that support a second signer
+# pqc_revisions lists revisions that support ML-DSA as a second signer
 def imx_sign_soc_data():
     return {
         "mx937": {"format": "ahab", "family": "mimx93754"},
         "mx952": {"format": "ahab", "family": "mimx95294", "pqc_revisions": ("a0",)},
-        "mx943": {"format": "ahab", "family": "mimx943", "pqc_revisions": ("a0",)},
+        "mx943": {"format": "ahab", "family": "mimx943", "pqc_revisions": ("a1",)},
         "mx95": {"format": "ahab", "family": "mimx9596", "pqc_revisions": ("b0",)},
         "mx93": {"format": "ahab", "family": "mimx9352"},
         "mx91": {"format": "ahab", "family": "mimx9131"},
@@ -305,7 +305,7 @@ python __anonymous() {
         d.setVar("IMX_SIGN_PQC_KEYDIR", os.path.realpath(d.getVar("IMX_SIGN_PQC_KEYDIR")))
         d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_PQC_KEYDIR"))
 
-    d.appendVar("DEPENDS", " python3-spsdk-native python3-spsdk-pqc-native")
+    d.appendVar("DEPENDS", " python3-spsdk-native")
     d.appendVarFlag("do_compile", "cleandirs", " " + d.getVar("IMX_SIGN_UNSIGNED_DIR"))
     d.appendVarFlag("do_compile", "postfuncs", " imx_sign_save_unsigned")
     # Copy before deploy's sstate postfunc publishes DEPLOYDIR
@@ -321,7 +321,6 @@ python imx_sign_ahab() {
     import json
     from pathlib import Path
 
-    from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
     from spsdk.crypto.keys import PrivateKey
     from spsdk.crypto.utils import extract_public_key
     from spsdk.exceptions import SPSDKError
@@ -368,8 +367,6 @@ python imx_sign_ahab() {
                 raise ValueError(f"Second key set is not supported for {family}, {revision}")
             if 2 not in AHABImage(FamilyRevision(family, revision)).chip_config.container_types:
                 raise ValueError(f"Second key set requires AHAB v2 support for {family}, {revision}")
-            if not IS_DILITHIUM_SUPPORTED:
-                raise ValueError("Second key set requires spsdk-pqc")
 
         def key_path(value, directory, setting):
             if not isinstance(value, str) or not value or ";" in value or value.startswith("type="):

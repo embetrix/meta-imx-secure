@@ -53,9 +53,8 @@ generate_srk_keys() {
         mldsa44|mldsa65|mldsa87)
             algorithm="ML-DSA-${srk_type#mldsa}"
             option=-provparam
-            # OpenSSL's built-in oqskeypair format includes the public key for SPSDK
-            # No OQS provider is needed
-            option_value=ml-dsa.output_formats=oqskeypair
+            # Native SPSDK ML-DSA keys use the standard seed format
+            option_value=ml-dsa.output_formats=seed-only
             pattern="$algorithm Public-Key:"
             ;;
     esac
