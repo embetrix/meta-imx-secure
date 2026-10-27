@@ -1,0 +1,17 @@
+{
+    "bitbake.pathToBitbakeFolder": "${workspaceFolder}/layers/bitbake",
+    "bitbake.pathToEnvScript": "${workspaceFolder}/layers/openembedded-core/oe-init-build-env",
+    "bitbake.pathToBuildFolder": "${workspaceFolder}/build",
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}/layers/bitbake/lib",
+        "${workspaceFolder}/layers/openembedded-core/meta/lib"
+    ],
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/layers/bitbake/lib",
+        "${workspaceFolder}/layers/openembedded-core/meta/lib"
+    ],
+    "files.associations": {
+        "*.conf": "bitbake",
+        "*.inc": "bitbake"
+    }
+}
