@@ -82,6 +82,3 @@ local_conf_header:
     INHERIT += "rm_work"
   license: |
     ACCEPT_FSL_EULA = "1"
-  signing: |
-    IMX_SIGN_ENABLE = "1"
-    IMX_SIGN_DEBUG  = "1"
