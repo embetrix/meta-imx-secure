@@ -10,6 +10,7 @@ SRC_URI += " \
             file://erofs.cfg \
             file://squashfs.cfg \
             file://hwrng.cfg \
+            file://netfilter.cfg \
             file://crypto.cfg \
             file://rpmb.cfg \
             "
