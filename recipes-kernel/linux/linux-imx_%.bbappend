@@ -3,4 +3,8 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI:append = " ${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'file://rpmb.cfg', '', d)}"
+SRC_URI += " \
+            file://patches/v6.18/0001-dm-verity-add-CONFIG_DM_VERITY_REQUIRE_ROOTHASH_SIG.patch \
+            file://dev-mapper.cfg \
+            ${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'file://rpmb.cfg', '', d)} \
+            "

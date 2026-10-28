@@ -1,0 +1,76 @@
+From bec2fa7bdf06d6523e40e05fd93117b0c1c8bd30 Mon Sep 17 00:00:00 2001
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Date: Mon, 7 Sep 2026 19:19:38 +0200
+Subject: [PATCH] dm-verity: add DM_VERITY_VERIFY_ROOTHASH_SIG_FORCE
+
+Add DM_VERITY_VERIFY_ROOTHASH_SIG_FORCE Kconfig option.  When enabled,
+dm-verity always requires a valid root hash signature: require_signatures
+defaults to true and can no longer be cleared on the command line.  When
+disabled, the existing require_signatures module parameter controls
+enforcement.
+
+Upstream-Status: Backport [https://github.com/torvalds/linux/commit/bec2fa7bdf06d6523e40e05fd93117b0c1c8bd30]
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+---
+ Documentation/admin-guide/device-mapper/verity.rst |    5 +++++
+ drivers/md/Kconfig                                 |   14 ++++++++++++++
+ drivers/md/dm-verity-verify-sig.c                  |    4 ++--
+ 3 files changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/admin-guide/device-mapper/verity.rst b/Documentation/admin-guide/device-mapper/verity.rst
+index 8c3f1f9..a1e43bb 100644
+--- a/Documentation/admin-guide/device-mapper/verity.rst
++++ b/Documentation/admin-guide/device-mapper/verity.rst
+@@ -150,6 +150,11 @@ root_hash_sig_key_desc <key_description>
+     also gain new certificates at run time if they are signed by a certificate
+     already in the secondary trusted keyring.
+ 
++    Whether a signature is required for every dm-verity device is controlled by
++    the dm_verity.require_signatures parameter which defaults to off. Setting
++    DM_VERITY_VERIFY_ROOTHASH_SIG_FORCE makes it default to on in which case it
++    can no longer be turned off.
++
+ try_verify_in_tasklet
+     If verity hashes are in cache and the IO size does not exceed the limit,
+     verify data blocks in bottom half instead of workqueue. This option can
+diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
+index 104aa53..a745ace 100644
+--- a/drivers/md/Kconfig
++++ b/drivers/md/Kconfig
+@@ -593,6 +593,20 @@ config DM_VERITY_VERIFY_ROOTHASH_SIG_PLATFORM_KEYRING
+ 
+ 	  If unsure, say N.
+ 
++config DM_VERITY_VERIFY_ROOTHASH_SIG_FORCE
++	bool "Require dm-verity root hash signature verification"
++	depends on DM_VERITY_VERIFY_ROOTHASH_SIG
++	help
++	  Reject dm-verity devices that are created without a valid root hash
++	  signature.  Without this, whether a signature is required is decided
++	  at boot time by the dm_verity.require_signatures parameter which
++	  defaults to off.
++
++	  Enabling this makes that parameter default to on and it can then no
++	  longer be turned off.
++
++	  If unsure, say N.
++
+ config DM_VERITY_FEC
+ 	bool "Verity forward error correction support"
+ 	depends on DM_VERITY
+diff --git a/drivers/md/dm-verity-verify-sig.c b/drivers/md/dm-verity-verify-sig.c
+index d5261a0..9da4ce6 100644
+--- a/drivers/md/dm-verity-verify-sig.c
++++ b/drivers/md/dm-verity-verify-sig.c
+@@ -14,8 +14,8 @@
+ 
+ #define DM_VERITY_VERIFY_ERR(s) DM_VERITY_ROOT_HASH_VERIFICATION " " s
+ 
+-static bool require_signatures;
+-module_param(require_signatures, bool, 0444);
++static bool require_signatures = IS_ENABLED(CONFIG_DM_VERITY_VERIFY_ROOTHASH_SIG_FORCE);
++module_param(require_signatures, bool_enable_only, 0444);
+ MODULE_PARM_DESC(require_signatures,
+ 		"Verify the roothash of dm-verity hash tree");
+ 
