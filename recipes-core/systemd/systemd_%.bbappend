@@ -3,7 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 # OpenSSL is required for resolved's DNSSEC validation
 PACKAGECONFIG:append = " journal-upload openssl"
 
-RRECOMMENDS:${PN} += "${PN}-journal-upload"
+RRECOMMENDS:${PN} += "${PN}-journal-upload ${PN}-container"
 
 # Route DNS lookups through resolved's local stub
 RESOLV_CONF = "stub-resolv"
