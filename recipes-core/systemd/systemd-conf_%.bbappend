@@ -4,9 +4,15 @@ SRC_URI += " \
     file://timesyncd.conf \
     file://rfkill-override.conf \
     file://resolved.conf \
+    ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://security-harden.conf', '', d)} \
 "
 
 do_install:append() {
+	if [ "${IMX_SECURITY_PROFILE}" = "prod" ]; then
+		install -d ${D}${sysconfdir}/sysctl.d
+		install -m 644 ${UNPACKDIR}/security-harden.conf ${D}${sysconfdir}/sysctl.d/90-security-harden.conf
+	fi
+
 	for config in resolved timesyncd; do
 		install -D -m 0644 "${UNPACKDIR}/$config.conf" \
 			"${D}${systemd_unitdir}/$config.conf.d/60-imx-secure.conf"
@@ -19,6 +25,7 @@ do_install:append() {
 }
 
 FILES:${PN} += " \
+    ${sysconfdir}/sysctl.d \
     ${systemd_unitdir}/resolved.conf.d \
     ${systemd_unitdir}/timesyncd.conf.d \
     ${systemd_system_unitdir}/systemd-rfkill.service.d \
