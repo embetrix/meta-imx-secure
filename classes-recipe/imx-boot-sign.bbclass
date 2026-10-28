@@ -3,6 +3,8 @@
 #
 # Sign and verify i.MX8/9 AHAB boot images using SPSDK:
 # https://github.com/nxp-mcuxpresso/spsdk
+# NXP direct signing guide, section 11:
+# https://community.nxp.com/t5/Multi-Source-Translation-Content/2377244-en-US/ta-p/2386026
 # AHAB only, HABv4 signing is not implemented
 # Family and revision support depends on the installed SPSDK version
 #
@@ -120,9 +122,10 @@ IMX_SIGN_BACKEND ??= "${@{'ahab': 'spsdk', 'hab4': 'cst'}.get(d.getVar('IMX_SIGN
 IMX_SPSDK_FAMILY ??= "${@imx_sign_family(d)}"
 IMX_SPSDK_REVISION ??= "${@imx_sign_revision(d)}"
 
-# Raw SD/eMMC flash.bin files start at the container, without disk padding
-# Override per UBOOT_CONFIG entry, for example IMX_SPSDK_MEMORY_TYPE[fspi] = "flexspi_nor"
+# Select the memory type for each UBOOT_CONFIG entry, with a fallback for raw SD/eMMC images
+# Override the fallback or add mappings such as IMX_SPSDK_MEMORY_TYPE[custom] = "flexspi_nor"
 IMX_SPSDK_MEMORY_TYPE ??= "serial_downloader"
+IMX_SPSDK_MEMORY_TYPE[fspi] ?= "flexspi_nor"
 
 IMX_SIGN_DEBUG ??= "0"
 IMX_SIGN_OUTPUT_DIR = "${WORKDIR}/imx-boot-signed"
