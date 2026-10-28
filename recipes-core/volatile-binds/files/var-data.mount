@@ -5,7 +5,7 @@ Description=Persistent data partition
 What=/dev/disk/by-label/data
 Where=/var/data
 Type=ext4
-Options=defaults
+Options=defaults,noexec,nosuid,nodev,nosymfollow
 
 [Install]
 WantedBy=local-fs.target
