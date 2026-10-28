@@ -1,0 +1,11 @@
+[Unit]
+Description=Persistent data partition
+
+[Mount]
+What=/dev/disk/by-label/data
+Where=/var/data
+Type=ext4
+Options=defaults
+
+[Install]
+WantedBy=local-fs.target

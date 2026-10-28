@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+# security-hardened mount table
+# All mount points with restrictive options to reduce attack surface
+#
+/dev/root            /                    auto       defaults                                  1 1
+proc                 /proc                proc       hidepid=2,nosuid,nodev,noexec              0 0
+sysfs                /sys                 sysfs      nosuid,nodev,noexec                        0 0
+securityfs           /sys/kernel/security securityfs nosuid,nodev,noexec                        0 0
+devpts               /dev/pts             devpts     mode=0620,gid=5,noexec,nosuid              0 0
+tmpfs                /run                 tmpfs      mode=0755,nodev,noexec,nosuid,strictatime  0 0
+tmpfs                /var/volatile        tmpfs      noexec,nodev,nosuid                        0 0
+tmpfs                /tmp                 tmpfs      noexec,nodev,nosuid                        0 0
+tmpfs                /dev/shm             tmpfs      noexec,nodev,nosuid                        0 0

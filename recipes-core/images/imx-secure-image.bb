@@ -4,6 +4,8 @@ LICENSE = "MIT"
 
 inherit core-image
 
+IMAGE_FEATURES:append = " read-only-rootfs ssh-server-openssh"
+
 IMAGE_INSTALL += " \
     packagegroup-security-base \
     packagegroup-imx-security \
