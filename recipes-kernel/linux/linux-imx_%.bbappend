@@ -13,4 +13,5 @@ SRC_URI += " \
             file://netfilter.cfg \
             file://crypto.cfg \
             file://rpmb.cfg \
+            ${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'file://selinux.cfg', '', d)} \
             "
