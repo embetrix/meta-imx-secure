@@ -14,4 +14,5 @@ SRC_URI += " \
             file://crypto.cfg \
             file://rpmb.cfg \
             ${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'file://selinux.cfg', '', d)} \
+            ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://security-harden.cfg', '', d)} \
             "
