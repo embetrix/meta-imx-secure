@@ -7,6 +7,6 @@ inherit core-image
 IMAGE_INSTALL += " \
     packagegroup-security-base \
     packagegroup-imx-security \
-    packagegroup-dev \
+    ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'packagegroup-dev', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'packagegroup-fsl-optee-imx', '', d)} \
 "
