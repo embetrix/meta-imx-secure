@@ -1,0 +1,1 @@
+SUBSYSTEM=="net", KERNEL=="mlan*", ACTION=="add", TAG+="systemd", ENV{SYSTEMD_WANTS}="wpa_supplicant@%k"

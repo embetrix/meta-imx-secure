@@ -3,6 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += " \
     file://timesyncd.conf \
     file://journal-upload.conf \
+    file://80-wlan.network \
     file://rfkill-override.conf \
     file://resolved.conf \
     ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://security-harden.conf', '', d)} \
@@ -18,6 +19,9 @@ do_install:append() {
 		install -D -m 0644 "${UNPACKDIR}/$config.conf" \
 			"${D}${systemd_unitdir}/$config.conf.d/60-imx-secure.conf"
 	done
+
+	install -d ${D}/${systemd_unitdir}/network
+	install -m 644 ${UNPACKDIR}/80-wlan.network ${D}/${systemd_unitdir}/network/
 
 	# Drop-in: defer systemd-rfkill until /var/lib volatile-bind is in place
 	install -d ${D}${systemd_system_unitdir}/systemd-rfkill.service.d
