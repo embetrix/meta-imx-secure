@@ -325,7 +325,7 @@ python imx_sign_ahab() {
     import json
     from pathlib import Path
 
-    from spsdk.crypto.keys import PrivateKey
+    from spsdk.crypto.keys import PrivateKey, PublicKeyMLDSA
     from spsdk.crypto.utils import extract_public_key
     from spsdk.exceptions import SPSDKError
     from spsdk.image.ahab.ahab_container import AHABContainerV2
@@ -399,6 +399,11 @@ python imx_sign_ahab() {
             # Reject encrypted keys without opening an interactive password prompt
             private = PrivateKey.load(config[signer])
             public_keys = [extract_public_key(key) for key in srk_table["srk_array"]]
+            for key, key_file in zip([private.get_public_key()] + public_keys,
+                                     [config[signer]] + srk_table["srk_array"]):
+                if isinstance(key, PublicKeyMLDSA) and key.level == 2:
+                    raise ValueError(f"ML-DSA-44 is not supported for AHAB signing: {key_file}. "
+                                     "Use ML-DSA-65 or ML-DSA-87 keys")
             if not private.verify_public_key(public_keys[config.get_int("used_srk_id", 0)]):
                 raise ValueError(f"{signer} does not match {name}.srk_array at used_srk_id")
         return config

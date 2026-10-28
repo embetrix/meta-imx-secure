@@ -22,7 +22,7 @@ usage() {
     echo "Default key type: secp384r1, overridden by KEY_TYPE or the third argument"
     echo "Choose a key type supported by your target SoC"
     echo "FIT key types: rsa2048 (default), rsa3072, rsa4096"
-    echo "PQC key types: none (default), mldsa44, mldsa65, mldsa87"
+    echo "PQC key types: none (default), mldsa65, mldsa87"
     echo "PQC keys need OpenSSL 3.5 or newer with ML-DSA support and a supported SoC revision"
 }
 
@@ -50,7 +50,7 @@ generate_srk_keys() {
             option_value="rsa_keygen_bits:${srk_type#rsa}"
             pattern="Public-Key: (${srk_type#rsa} bit)"
             ;;
-        mldsa44|mldsa65|mldsa87)
+        mldsa65|mldsa87)
             algorithm="ML-DSA-${srk_type#mldsa}"
             option=-provparam
             # Native SPSDK ML-DSA keys use the standard seed format
@@ -119,10 +119,11 @@ case "$KEY_TYPE" in
 esac
 case "$PQC_KEY_TYPE" in
     none) ;;
-    mldsa44|mldsa65|mldsa87)
+    mldsa65|mldsa87)
         openssl list -signature-algorithms 2>/dev/null | grep -Fq "ML-DSA-${PQC_KEY_TYPE#mldsa}" ||
             die "OpenSSL does not support $PQC_KEY_TYPE. Install OpenSSL with ML-DSA support"
         ;;
+    mldsa44) die "ML-DSA-44 is not supported for AHAB signing. Use mldsa65 or mldsa87" ;;
     *) usage >&2; die "Unsupported PQC key type: $PQC_KEY_TYPE" ;;
 esac
 # Keep generated BitBake assignments and kas paths literal
