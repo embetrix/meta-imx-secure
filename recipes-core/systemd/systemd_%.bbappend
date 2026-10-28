@@ -6,6 +6,9 @@ PACKAGECONFIG:append = " openssl"
 # Route DNS lookups through resolved's local stub
 RESOLV_CONF = "stub-resolv"
 
+WATCHDOG_RUNTIME_SEC = "15s"
+WATCHDOG_TIMEOUT = "10min"
+
 do_install:append() {
 
     if [ "${IMX_SECURITY_PROFILE}" = "prod" ]; then
