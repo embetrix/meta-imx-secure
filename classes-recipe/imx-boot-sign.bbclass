@@ -8,9 +8,9 @@
 #
 # Sign unsigned and OEM containers, preserving NXP and V2X containers
 # Verify OEM signatures, image hashes and unchanged image data and metadata
-# Replace build outputs only after all boot image variants pass verification
-# Deploy signed images under the normal imx-boot filenames
-# Deploy SPSDK SRK hashes and fuse scripts in <image>.fuses/
+# Keep unsigned build outputs and deploy verified copies as <image>.sign
+# Deploy imx-boot.sign and imx-boot.tagged.sign for the BSP's default image
+# Deploy SPSDK SRK hashes and fuse scripts in <image>.sign.fuses/
 # This class does not program SRK hash fuses or change the device lifecycle
 #
 # Generate keys and a kas fragment with tools/genkey-helper.sh <KEY_DIR>, then run:
@@ -125,7 +125,6 @@ IMX_SPSDK_REVISION ??= "${@imx_sign_revision(d)}"
 IMX_SPSDK_MEMORY_TYPE ??= "serial_downloader"
 
 IMX_SIGN_DEBUG ??= "0"
-IMX_SIGN_UNSIGNED_DIR = "${WORKDIR}/imx-boot-unsigned"
 IMX_SIGN_OUTPUT_DIR = "${WORKDIR}/imx-boot-signed"
 
 def imx_sign_images(d):
@@ -189,19 +188,8 @@ def imx_sign_config(d):
     output.write_text(template)
     return str(output)
 
-python imx_sign_save_unsigned() {
-    import shutil
-
-    for config, name in imx_sign_images(d):
-        source = os.path.join(d.getVar("S"), name)
-        if not os.path.isfile(source):
-            bb.fatal("Missing boot image: %s" % source)
-        shutil.copy2(source, os.path.join(d.getVar("IMX_SIGN_UNSIGNED_DIR"), name))
-}
-
 python do_imx_boot_sign() {
     import json
-    import shutil
     import subprocess
     import textwrap
 
@@ -232,7 +220,7 @@ python do_imx_boot_sign() {
     images = list(imx_sign_images(d))
     for config, name in images:
         memory = d.getVarFlag("IMX_SPSDK_MEMORY_TYPE", config) or d.getVar("IMX_SPSDK_MEMORY_TYPE")
-        source = os.path.join(d.getVar("IMX_SIGN_UNSIGNED_DIR"), name)
+        source = os.path.join(d.getVar("S"), name)
         output = os.path.join(d.getVar("IMX_SIGN_OUTPUT_DIR"), name)
         bb.note("Signing %s (%s, %s, %s)" % (
             name, d.getVar("IMX_SPSDK_FAMILY"), d.getVar("IMX_SPSDK_REVISION"), memory))
@@ -253,24 +241,37 @@ python do_imx_boot_sign() {
             bb.verbnote("Verified signatures and unchanged payloads: %s" % output)
             bb.verbnote("SPSDK SRK hashes and fuse scripts: %s.fuses/" % output)
 
-    # Publish only after every variant has passed verification
-    for config, name in images:
-        destination = os.path.join(d.getVar("S"), name)
-        shutil.copy2(os.path.join(d.getVar("IMX_SIGN_OUTPUT_DIR"), name), destination + ".signed")
-        os.replace(destination + ".signed", destination)
-        if debug:
-            bb.verbnote("Signed boot image ready for install and deploy: %s" % destination)
 }
 do_imx_boot_sign[cleandirs] = "${IMX_SIGN_OUTPUT_DIR}"
 do_imx_boot_sign[vardeps] += "IMX_SPSDK_MEMORY_TYPE UBOOT_CONFIG IMXBOOT_TARGETS BOOT_VARIANT MACHINE"
 
-python imx_sign_deploy_srk() {
+python imx_sign_deploy() {
     import shutil
+    from pathlib import Path
 
-    for config, name in imx_sign_images(d):
-        shutil.copytree(os.path.join(d.getVar("IMX_SIGN_OUTPUT_DIR"), name + ".fuses"),
-                        os.path.join(d.getVar("DEPLOYDIR"), name + ".fuses"),
+    source = Path(d.getVar("IMX_SIGN_OUTPUT_DIR"))
+    deploy = Path(d.getVar("DEPLOYDIR"))
+    images = list(imx_sign_images(d))
+    default = (deploy / "imx-boot").resolve().name
+    if default not in [name for config, name in images]:
+        bb.fatal("No signed variant for deployed imx-boot: %s" % default)
+
+    # This hook runs only after every variant has passed signing and verification
+    for config, name in images:
+        shutil.copy2(source / name, deploy / (name + ".sign"))
+        shutil.copytree(source / (name + ".fuses"), deploy / (name + ".sign.fuses"),
                         dirs_exist_ok=True)
+
+    link = deploy / "imx-boot.sign"
+    link.unlink(missing_ok=True)
+    link.symlink_to(default + ".sign")
+
+    tagged = deploy / "imx-boot.tagged.sign"
+    shutil.copy2(link, tagged)
+    # Match the size tag appended by uuu_bootloader_tag.bbclass
+    size = tagged.stat().st_size
+    with tagged.open("ab") as output:
+        output.write(("UUUBURNXXOEUZX7+A-XY5601QQWWZ%dEND\n" % size).encode("ascii"))
 }
 
 python __anonymous() {
@@ -311,14 +312,12 @@ python __anonymous() {
         d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_PQC_KEYDIR"))
 
     d.appendVar("DEPENDS", " python3-spsdk-native")
-    d.appendVarFlag("do_compile", "cleandirs", " " + d.getVar("IMX_SIGN_UNSIGNED_DIR"))
-    d.appendVarFlag("do_compile", "postfuncs", " imx_sign_save_unsigned")
     # Copy before deploy's sstate postfunc publishes DEPLOYDIR
-    d.prependVarFlag("do_deploy", "postfuncs", "imx_sign_deploy_srk ")
+    d.prependVarFlag("do_deploy", "postfuncs", "imx_sign_deploy ")
     d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_KEYDIR"))
     if d.getVar("IMX_SIGN_CONFIG"):
         d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_CONFIG"))
-    bb.build.addtask("do_imx_boot_sign", "do_install do_deploy", "do_compile", d)
+    bb.build.addtask("do_imx_boot_sign", "do_deploy", "do_compile", d)
 }
 
 python imx_sign_ahab() {

@@ -21,5 +21,7 @@ WICVARS:append = " IMAGE_BOOT_FILES_label-bootA"
 do_image_wic[depends] += "linux-yocto-fitimage:do_deploy"
 
 WKS_FILE = "imx-boot-secure-bootpart.wks.in"
+IMX_BOOTLOADER ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', \
+    'imx-boot.tagged.sign', 'imx-boot.tagged', d)}"
 ROOTFS_TYPE ?= "ext4"
 IMAGE_FSTYPES += "wic.gz wic.bmap"
