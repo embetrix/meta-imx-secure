@@ -76,14 +76,11 @@ repos:
       meta-imx-bsp:
       meta-imx-sdk:
 
-env:
-  # Set to 1 to accept NXP's EULA
-  ACCEPT_FSL_EULA: "1"
-
 local_conf_header:
   base: |
     CONF_VERSION = "2"
     INHERIT += "rm_work"
+  license: |
     ACCEPT_FSL_EULA = "1"
   signing: |
     IMX_SIGN_ENABLE = "1"
