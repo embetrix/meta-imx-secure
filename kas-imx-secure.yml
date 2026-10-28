@@ -84,6 +84,7 @@ local_conf_header:
   base: |
     CONF_VERSION = "2"
     INHERIT += "rm_work"
+    ACCEPT_FSL_EULA = "1"
   debug: |
     EXTRA_IMAGE_FEATURES:append = " allow-empty-password allow-root-login empty-root-password"
   signing: |
