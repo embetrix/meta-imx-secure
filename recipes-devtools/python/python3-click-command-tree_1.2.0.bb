@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "click plugin to show the command tree of your CLI"
 HOMEPAGE = "https://github.com/whwright/click-command-tree"
 LICENSE = "MIT"

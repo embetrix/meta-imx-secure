@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "CRC generator with a Python and C implementation"
 HOMEPAGE = "https://github.com/ntamas/crcmod-plus"
 LICENSE = "MIT"

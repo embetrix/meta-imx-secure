@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "Python Character Mapping Codec for T61"
 HOMEPAGE = "https://github.com/exhuma/t61codec"
 LICENSE = "MIT"

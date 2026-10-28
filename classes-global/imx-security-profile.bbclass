@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
 python imx_security_profile_check() {
     profile = e.data.getVar("IMX_SECURITY_PROFILE")

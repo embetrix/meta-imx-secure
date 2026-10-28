@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 # OpenSSL is required for resolved's DNSSEC validation

@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "Additional argparse types and actions"
 HOMEPAGE = "https://github.com/eerimoq/argparse_addons"
 LICENSE = "MIT"

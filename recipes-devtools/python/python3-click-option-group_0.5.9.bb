@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "Option groups missing in Click"
 HOMEPAGE = "https://github.com/click-contrib/click-option-group"
 LICENSE = "BSD-3-Clause"

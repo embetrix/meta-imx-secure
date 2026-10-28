@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "PKCS#11 support for Python"
 HOMEPAGE = "https://github.com/pyauth/python-pkcs11"
 LICENSE = "MIT"

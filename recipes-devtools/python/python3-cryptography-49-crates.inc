@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 # Generated from cryptography 49.0.0 Cargo.lock
 
 SRC_URI += " \

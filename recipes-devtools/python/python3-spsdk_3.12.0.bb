@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "NXP SPSDK image signing tools"
 HOMEPAGE = "https://github.com/nxp-mcuxpresso/spsdk"
 LICENSE = "BSD-3-Clause"

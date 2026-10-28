@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 # BSP layers pinned to NXP LF6.18.37_2.1.0 other repos follow Wrynose
 # https://github.com/nxp-imx/imx-manifest/blob/5e07321d7a0d9e4f46504d078625e403906b63e9/imx-6.18.37-2.1.0.xml
 header:

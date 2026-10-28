@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "Python wrapper around NXP LIBUSBSIO library"
 HOMEPAGE = "https://www.nxp.com/libusbsio"
 LICENSE = "BSD-3-Clause"

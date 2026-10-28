@@ -1,7 +1,7 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
-#
+
 # Generate AHAB SRK pairs, a FIT key and a kas signing-keys fragment
 # Usage: tools/genkey-helper.sh [KEY_DIR] [KAS_FRAGMENT] [KEY_TYPE] [FIT_KEY_TYPE] [PQC_KEY_TYPE]
 # Defaults: imx-secure-keys, kas-signing-keys.yml, secp384r1, rsa2048 and none

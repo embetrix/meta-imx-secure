@@ -1,8 +1,7 @@
 #!/usr/sbin/nft -f
-#
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
-#
+
 # Default-deny nftables ruleset :
 #
 # Input:   drop all, allow established/related, SSH and HTTPS from RFC1918/ULA

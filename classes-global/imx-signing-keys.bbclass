@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
-#
+
 # Shared AHAB and FIT key checks
 # Generate keys and a kas fragment with tools/genkey-helper.sh
 

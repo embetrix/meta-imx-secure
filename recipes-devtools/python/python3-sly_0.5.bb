@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "'SLY - Sly Lex Yacc'"
 HOMEPAGE = "https://github.com/dabeaz/sly"
 LICENSE = "MIT"

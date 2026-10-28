@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "PKCS#11 signature provider for NXP SPSDK"
 HOMEPAGE = "https://github.com/nxp-mcuxpresso/spsdk_plugins/tree/master/pkcs11"
 LICENSE = "BSD-3-Clause"

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
-#
+
 # Sign and verify i.MX8/9 AHAB boot images using SPSDK:
 # https://github.com/nxp-mcuxpresso/spsdk
 # NXP direct signing guide, section 11:

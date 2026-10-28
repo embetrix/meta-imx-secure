@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "Mangling of various file formats that conveys binary information (Motorola S-Record, Intel HEX and binary files)"
 HOMEPAGE = "https://github.com/eerimoq/bincopy"
 LICENSE = "MIT"

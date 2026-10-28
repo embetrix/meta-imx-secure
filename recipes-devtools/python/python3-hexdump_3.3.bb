@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "Read and write hexadecimal dumps"
 HOMEPAGE = "https://pypi.org/project/hexdump/"
 LICENSE = "PD"

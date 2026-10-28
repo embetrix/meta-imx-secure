@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 # SPSDK 3.12 requires cryptography >= 48.0.1 and < 50
 PV = "49.0.0"
 SRC_URI[sha256sum] = "f89660a348f4f78a92366240a61404e337586ef7f5909a2fef59ca88ef505493"

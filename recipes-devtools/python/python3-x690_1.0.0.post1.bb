@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "Pure Python X.690 implementation"
 HOMEPAGE = "https://exhuma.github.io/x690/"
 LICENSE = "MIT"

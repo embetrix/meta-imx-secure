@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
 SUMMARY = "A toolset for deeply merging Python dictionaries"
 HOMEPAGE = "http://deepmerge.readthedocs.io/en/latest/"
 LICENSE = "MIT"
