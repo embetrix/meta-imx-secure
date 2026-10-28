@@ -85,8 +85,6 @@ local_conf_header:
     CONF_VERSION = "2"
     INHERIT += "rm_work"
     ACCEPT_FSL_EULA = "1"
-  debug: |
-    EXTRA_IMAGE_FEATURES:append = " ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'allow-empty-password allow-root-login empty-root-password', '', d)}"
   signing: |
     IMX_SIGN_ENABLE = "1"
     IMX_SIGN_DEBUG  = "1"
