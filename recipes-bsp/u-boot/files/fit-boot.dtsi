@@ -4,7 +4,18 @@
 
 / {
 	config {
+#if defined(CONFIG_AHAB_BOOT) && defined(CONFIG_ENV_IMPORT_FDT)
+		/* Apply the FIT overrides to compiled defaults on every boot */
+		load-environment = <0>;
+
+		environment {
+			cntr_file = "fitImage";
+			auth_os = "bootm ${cntr_addr}; reset";
+			loadbootscript = "false";
+		};
+#else
 		/* Use the compiled boot command */
 		bootcmd = CONFIG_BOOTCOMMAND;
+#endif
 	};
 };
