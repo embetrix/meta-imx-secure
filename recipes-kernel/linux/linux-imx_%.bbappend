@@ -9,5 +9,7 @@ SRC_URI += " \
             file://ext4.cfg \
             file://erofs.cfg \
             file://squashfs.cfg \
-            ${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'file://rpmb.cfg', '', d)} \
+            file://hwrng.cfg \
+            file://crypto.cfg \
+            file://rpmb.cfg \
             "
