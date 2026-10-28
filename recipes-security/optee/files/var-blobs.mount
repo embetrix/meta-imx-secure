@@ -1,0 +1,11 @@
+[Unit]
+Description=Persistent blobs partition
+
+[Mount]
+What=/dev/disk/by-label/blobs
+Where=/var/blobs
+Type=ext4
+Options=defaults,noexec,nosuid,nodev,nosymfollow
+
+[Install]
+WantedBy=local-fs.target

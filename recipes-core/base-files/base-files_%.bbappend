@@ -1,8 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-# add mount points for boot (inactive), blobs data partitions
-dirs755 += " ${localstatedir}/data \
-            "
+# Mount points for persistent partitions
+dirs755 += " ${localstatedir}/data ${localstatedir}/blobs"
 
 # meta-integrity's base-files-ima.inc appends a second securityfs line
 # with weak options; our fstab already has a hardened one, so remove it.
