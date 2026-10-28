@@ -1,13 +1,18 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 # OpenSSL is required for resolved's DNSSEC validation
-PACKAGECONFIG:append = " openssl"
+PACKAGECONFIG:append = " journal-upload openssl"
+
+RRECOMMENDS:${PN} += "${PN}-journal-upload"
 
 # Route DNS lookups through resolved's local stub
 RESOLV_CONF = "stub-resolv"
 
 WATCHDOG_RUNTIME_SEC = "15s"
 WATCHDOG_TIMEOUT = "10min"
+
+# Enable uploads when a log server is configured
+SYSTEMD_AUTO_ENABLE:${PN}-journal-upload = "disable"
 
 do_install:append() {
 
@@ -17,4 +22,8 @@ do_install:append() {
         sed -i '/#DefaultLimitCORE=/c\\DefaultLimitCORE=0' ${D}${sysconfdir}/systemd/system.conf
     fi
 
+    # Limit journald size
+    sed -i '/#SystemMaxUse=/c\\SystemMaxUse=256M'          ${D}${sysconfdir}/systemd/journald.conf
+    sed -i '/#SystemMaxFileSize=/c\\SystemMaxFileSize=32M' ${D}${sysconfdir}/systemd/journald.conf
+    sed -i '/#RuntimeMaxUse=/c\\RuntimeMaxUse=64M'         ${D}${sysconfdir}/systemd/journald.conf
 }
