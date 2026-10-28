@@ -1,5 +1,11 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
+# Enable client and supplicant debug traces in development, keep errors in production
+EXTRA_OECMAKE:append = " \
+    -DCFG_TEE_CLIENT_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '3', '1', d)} \
+    -DCFG_TEE_SUPP_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '3', '1', d)} \
+"
+
 SRC_URI += " \
     file://tee-supplicant-storage.conf \
     file://var-blobs.mount \

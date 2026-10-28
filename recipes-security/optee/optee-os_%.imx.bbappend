@@ -1,9 +1,15 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-# WARNING: Temporary setting for PKCS#11 without a provisioned RPMB
+# Enable core and TA debug traces only in development builds
+EXTRA_OEMAKE:append = " \
+    CFG_TEE_CORE_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '3', '0', d)} \
+    CFG_TEE_TA_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '3', '0', d)} \
+"
+
+# Allow insecure fallbacks only in development builds
 # REE storage is encrypted but has no rollback protection
-EXTRA_OEMAKE:append = " CFG_INSECURE=y"
+EXTRA_OEMAKE:append = " CFG_INSECURE=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'y', 'n', d)}"
 
 # Disable embedded tests, stack unwinding and attestation
 # Core assertions stay enabled
