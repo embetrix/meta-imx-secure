@@ -29,6 +29,6 @@ ROOTFS_TYPE  ?= "ext4"
 IMAGE_FSTYPES += "wic.gz wic.bmap ${ROOTFS_TYPE}.avbverity.gz"
 
 BOOT_PART_SZ ?= "512M"
-BLOB_PART_SZ ?= "512M"
 ROOT_PART_SZ ?= "1024M"
+SECDATA_PART_SZ ?= "512M"
 DATA_PART_SZ ?= "4096M"

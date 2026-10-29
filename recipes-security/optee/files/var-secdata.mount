@@ -2,11 +2,11 @@
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
 [Unit]
-Description=Persistent blobs partition
+Description=Persistent secdata partition
 
 [Mount]
-What=/dev/disk/by-label/blobs
-Where=/var/blobs
+What=/dev/disk/by-label/secdata
+Where=/var/secdata
 Type=ext4
 Options=defaults,noexec,nosuid,nodev,nosymfollow
 

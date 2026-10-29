@@ -11,7 +11,7 @@ EXTRA_OECMAKE:append = " \
 
 SRC_URI += " \
     file://tee-supplicant-storage.conf \
-    file://var-blobs.mount \
+    file://var-secdata.mount \
 "
 
 do_install:append() {
@@ -22,10 +22,10 @@ do_install:append() {
         ${UNPACKDIR}/tee-supplicant-storage.conf \
         > ${D}${systemd_system_unitdir}/tee-supplicant@.service.d/storage.conf
     chmod 0644 ${D}${systemd_system_unitdir}/tee-supplicant@.service.d/storage.conf
-    install -m 0644 ${UNPACKDIR}/var-blobs.mount ${D}${systemd_system_unitdir}/var-blobs.mount
+    install -m 0644 ${UNPACKDIR}/var-secdata.mount ${D}${systemd_system_unitdir}/var-secdata.mount
 }
 
 FILES:${PN} += " \
     ${systemd_system_unitdir}/tee-supplicant@.service.d \
-    ${systemd_system_unitdir}/var-blobs.mount \
+    ${systemd_system_unitdir}/var-secdata.mount \
 "
