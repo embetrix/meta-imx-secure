@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-# Enable core and TA debug traces only in development builds
+# Log only core and TA errors in development builds, stay silent in production
 EXTRA_OEMAKE:append = " \
-    CFG_TEE_CORE_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '3', '0', d)} \
-    CFG_TEE_TA_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '3', '0', d)} \
+    CFG_TEE_CORE_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '1', '0', d)} \
+    CFG_TEE_TA_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '1', '0', d)} \
 "
 
 # Allow insecure fallbacks only in development builds
