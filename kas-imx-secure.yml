@@ -95,7 +95,5 @@ local_conf_header:
   base: |
     CONF_VERSION = "2"
     INHERIT += "rm_work"
-  security: |
-    IMX_SECURITY_PROFILE = "prod"
   license: |
     ACCEPT_FSL_EULA = "1"
