@@ -1,11 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-
-SRC_URI += "file://var-data.mount"
-SYSTEMD_SERVICE:${PN} += "var-data.mount"
-
 # Explicitly disable OverlayFS and default to bind mounts
 AVOID_OVERLAYFS = "1"
 

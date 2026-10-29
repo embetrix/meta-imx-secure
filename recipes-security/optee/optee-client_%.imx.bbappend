@@ -9,10 +9,7 @@ EXTRA_OECMAKE:append = " \
     -DCFG_TEE_SUPP_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '3', '0', d)} \
 "
 
-SRC_URI += " \
-    file://tee-supplicant-storage.conf \
-    file://var-secdata.mount \
-"
+SRC_URI += "file://tee-supplicant-storage.conf"
 
 do_install:append() {
     install -d ${D}${systemd_system_unitdir}/tee-supplicant@.service.d
@@ -22,10 +19,6 @@ do_install:append() {
         ${UNPACKDIR}/tee-supplicant-storage.conf \
         > ${D}${systemd_system_unitdir}/tee-supplicant@.service.d/storage.conf
     chmod 0644 ${D}${systemd_system_unitdir}/tee-supplicant@.service.d/storage.conf
-    install -m 0644 ${UNPACKDIR}/var-secdata.mount ${D}${systemd_system_unitdir}/var-secdata.mount
 }
 
-FILES:${PN} += " \
-    ${systemd_system_unitdir}/tee-supplicant@.service.d \
-    ${systemd_system_unitdir}/var-secdata.mount \
-"
+FILES:${PN} += "${systemd_system_unitdir}/tee-supplicant@.service.d"
