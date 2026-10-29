@@ -93,7 +93,8 @@ p11() {
     pkcs11-tool --module "$module" --slot "$slot" "$@"
 }
 # Both modules need a user session for private objects, but no secret PIN
-user_p11() { p11 --login "$@"; }
+# An explicit empty PIN prevents prompting if identity authentication is missing
+user_p11() { p11 --login --pin '' "$@"; }
 
 prepare() {
     [[ -r $module ]] || { echo "Missing module: $module"; exit 1; }
@@ -109,7 +110,8 @@ prepare() {
     fi
     if ! user_p11 --list-objects; then
         if [[ $name == optee ]]; then
-            echo "OP-TEE needs a token initialized for the current Linux user's TEE identity"
+            echo "OP-TEE login failed: slot $slot must be provisioned for this Linux user's TEE identity"
+            echo "An empty PIN prevents prompting but does not initialize the token"
             echo "For a disposable test token, run: pkcs11-test --backend optee --optee-slot $slot --init"
             echo "This erases existing objects on that token"
         fi
