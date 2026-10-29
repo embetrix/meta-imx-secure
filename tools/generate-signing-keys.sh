@@ -34,6 +34,7 @@ Command-line options override these defaults
 
 Files use role/role-algorithm.key and .crt names, or ahab/srkN-algorithm.key and .pub
 Certificates use PEM, except IMA which uses DER
+The SSH CA uses Ed25519 keys in OpenSSH format
 The kas fragment sets the AVB algorithm to match the key size
 Choose AHAB key types supported by your target SoC and revision
 PQC keys need OpenSSL with ML-DSA seed-format support
@@ -102,6 +103,7 @@ parse_options() {
     MODSIGN_BASE=modsign/modsign-$MODSIGN_KEY_TYPE
     IMA_BASE=ima/ima-$IMA_KEY_TYPE
     AVB_BASE=avb/avb-$AVB_KEY_TYPE
+    SSH_CA_BASE=ssh-ca/ssh-ca-ed25519
 }
 
 check_file() {
@@ -111,6 +113,7 @@ check_file() {
 
 prepare() {
     command -v openssl >/dev/null 2>&1 || die "Install openssl first"
+    command -v ssh-keygen >/dev/null 2>&1 || die "Install ssh-keygen first"
     for path in "$KEY_DIR" "$KAS_FRAGMENT"; do
         case "$path" in
             ''|*[!a-zA-Z0-9_./+-]*) die "Use paths containing only letters, digits, /, ., _, + or -" ;;
@@ -124,7 +127,7 @@ prepare() {
     case "$KEY_DIR" in
         *[!a-zA-Z0-9_./+-]*) die "The resolved key directory contains unsupported characters" ;;
     esac
-    for role in ahab fit modsign ima avb; do
+    for role in ahab fit modsign ima avb ssh-ca; do
         [ ! -L "$KEY_DIR/$role" ] || die "$role directory must not be a symlink"
         [ ! -e "$KEY_DIR/$role" ] || [ -d "$KEY_DIR/$role" ] || die "$role must be a directory"
     done
@@ -151,6 +154,7 @@ $FIT_BASE|$FIT_KEY_TYPE|PEM|i.MX FIT signing
 $MODSIGN_BASE|$MODSIGN_KEY_TYPE|PEM|i.MX module signing
 $IMA_BASE|$IMA_KEY_TYPE|DER|i.MX IMA-EVM signing
 $AVB_BASE|$AVB_KEY_TYPE|PEM|i.MX AVB signing
+$SSH_CA_BASE|ed25519|SSH|i.MX SSH CA
 EOF
 )
 
@@ -158,6 +162,10 @@ generate_private() (
     key_type=$1
     output=$2
     case "$key_type" in
+        ed25519)
+            ssh-keygen -q -t ed25519 -N "" -C "Embetrix i.MX SSH CA" -f "$output"
+            rm "$output.pub"
+            exit 0 ;;
         prime256v1|secp384r1|secp521r1)
             set -- -algorithm EC -pkeyopt "ec_paramgen_curve:$key_type" ;;
         rsa2048|rsa3072|rsa4096|rsa8192)
@@ -172,6 +180,13 @@ generate_private() (
 check_private() (
     private=$1
     key_type=$2
+    if [ "$key_type" = ed25519 ]; then
+        ssh-keygen -y -P "" -f "$private" > "$TEMP_DIR/derived.pub" ||
+            die "Invalid or encrypted SSH CA private key: $private"
+        read -r public_type public_data < "$TEMP_DIR/derived.pub"
+        [ "$public_type" = ssh-ed25519 ] || die "$private must use ed25519"
+        exit 0
+    fi
     openssl pkey -in "$private" -passin pass: -check -noout >/dev/null ||
         die "Invalid or encrypted private key: $private"
     openssl pkey -in "$private" -passin pass: -pubout -out "$TEMP_DIR/derived.pub"
@@ -197,7 +212,13 @@ check_pair() (
     fi
     check_private "$private" "$key_type"
     [ -e "$public" ] || exit 0
-    if [ "$format" = PUB ]; then
+    if [ "$format" = SSH ]; then
+        ssh-keygen -l -f "$public" >/dev/null || die "Invalid SSH CA public key: $public"
+        awk 'NF { print $1 " " $2 }' "$public" > "$TEMP_DIR/existing.ssh"
+        awk 'NF { print $1 " " $2 }' "$TEMP_DIR/derived.pub" > "$TEMP_DIR/derived.ssh"
+        cmp -s "$TEMP_DIR/existing.ssh" "$TEMP_DIR/derived.ssh" || die "$public does not match $private"
+        exit 0
+    elif [ "$format" = PUB ]; then
         openssl pkey -pubin -in "$public" -outform DER -out "$TEMP_DIR/existing.der"
     else
         openssl x509 -inform "$format" -in "$public" -pubkey -noout > "$TEMP_DIR/cert.pub"
@@ -222,7 +243,7 @@ process_pair() (
     subject=$5
     private=$base.key
     public=$base.crt
-    [ "$format" != PUB ] || public=$base.pub
+    case "$format" in PUB|SSH) public=$base.pub ;; esac
 
     if [ "$phase" = check ]; then
         # A different filename must not silently create a replacement key
@@ -247,7 +268,9 @@ process_pair() (
         publish "$TEMP_DIR/new.key" "$private" 600
     fi
     if [ ! -e "$public" ]; then
-        if [ "$format" = PUB ]; then
+        if [ "$format" = SSH ]; then
+            ssh-keygen -y -P "" -f "$private" > "$TEMP_DIR/new.public"
+        elif [ "$format" = PUB ]; then
             openssl pkey -in "$private" -passin pass: -pubout -out "$TEMP_DIR/new.public"
         else
             set --
@@ -310,6 +333,7 @@ EOF
     AVB_SIGN_KEY ?= "$KEY_DIR/$AVB_BASE.key"
     AVB_X509 ?= "$KEY_DIR/$AVB_BASE.crt"
     AVB_ALGORITHM = "SHA256_RSA${AVB_KEY_TYPE#rsa}"
+    OPENSSH_CA_PUBKEY ?= "$KEY_DIR/$SSH_CA_BASE.pub"
 EOF
 }
 
@@ -317,9 +341,13 @@ check_fragment() (
     [ -e "$KAS_FRAGMENT" ] || exit 0
     cp "$KAS_FRAGMENT" "$TEMP_DIR/original.yml"
     cmp -s "$TEMP_DIR/kas.yml" "$KAS_FRAGMENT" && exit 0
-    # Allow adding PQC keys to the current layout
+    # Allow adding PQC keys or the SSH CA setting to the current layout
     (AHAB_PQC_TYPE=none; render_fragment) > "$TEMP_DIR/without-pqc.yml"
-    cmp -s "$TEMP_DIR/without-pqc.yml" "$KAS_FRAGMENT" && exit 0
+    for candidate in "$TEMP_DIR/kas.yml" "$TEMP_DIR/without-pqc.yml"; do
+        cmp -s "$candidate" "$KAS_FRAGMENT" && exit 0
+        sed '/^    OPENSSH_CA_PUBKEY /d' "$candidate" > "$TEMP_DIR/without-ssh-ca.yml"
+        cmp -s "$TEMP_DIR/without-ssh-ca.yml" "$KAS_FRAGMENT" && exit 0
+    done
     die "$KAS_FRAGMENT already exists with different settings, choose another fragment path"
 )
 

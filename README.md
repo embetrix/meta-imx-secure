@@ -4,7 +4,7 @@ A Yocto layer that provides a security-hardened baseline for i.MX device, extend
 
 ## Build
 
-Install kas, OpenSSL and the Yocto host dependencies, then generate the AHAB and FIT signing keys and kas fragment:
+Install kas, OpenSSL, ssh-keygen and the Yocto host dependencies, then generate the signing keys, SSH CA and kas fragment:
 
 ```sh
 tools/generate-signing-keys.sh
