@@ -15,7 +15,7 @@
 # Deploy SPSDK SRK hashes and fuse scripts in <image>.sign.fuses/
 # This class does not program SRK hash fuses or change the device lifecycle
 #
-# Generate keys and a kas fragment with tools/genkey-helper.sh <KEY_DIR>, then run:
+# Generate keys and a kas fragment with tools/generate-signing-keys.sh --key-dir <KEY_DIR>, then run:
 # kas build kas-imx-secure.yml:kas-signing-keys.yml
 # Or enable in local.conf or distro configuration with existing keys:
 # INHERIT += "imx-signing-keys"

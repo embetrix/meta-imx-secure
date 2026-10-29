@@ -2,7 +2,7 @@
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
 # Shared AHAB and FIT key checks
-# Generate keys and a kas fragment with tools/genkey-helper.sh
+# Generate keys and a kas fragment with tools/generate-signing-keys.sh
 
 def imx_validate_signing_flags(d):
     for name in ("IMX_SIGN_ENABLE", "IMX_SIGN_PQC_ENABLE", "IMX_SIGN_DEBUG", "UBOOT_SIGN_ENABLE"):
@@ -38,7 +38,7 @@ def imx_validate_fit_signing_keys(d, prefix="UBOOT_SIGN"):
         path = os.path.join(keydir, keyname + suffix)
         if not os.path.isfile(path) or not os.access(path, os.R_OK) or not os.path.getsize(path):
             bb.fatal("Missing, empty or unreadable FIT signing key or certificate: %s\n"
-                     "Run tools/genkey-helper.sh <KEY_DIR> to generate FIT keys" % path)
+                     "Run tools/generate-signing-keys.sh --key-dir <KEY_DIR> to generate FIT keys" % path)
 
 def imx_validate_signing_keys(d):
     import os
@@ -83,9 +83,9 @@ def imx_validate_signing_keys(d):
         elif directory is not None and os.path.commonpath([os.path.realpath(directory), os.path.realpath(path)]) != os.path.realpath(directory):
             errors.append("%s must be inside its signing key directory: %s" % (name, path))
     if errors:
-        command = "PQC_KEY_TYPE=mldsa65 " if d.getVar("IMX_SIGN_PQC_ENABLE") == "1" else ""
+        command = "AHAB_PQC_TYPE=mldsa65 " if d.getVar("IMX_SIGN_PQC_ENABLE") == "1" else ""
         bb.fatal("Invalid AHAB signing keys:\n  " + "\n  ".join(errors) +
-                 "\n\nGenerate keys with:\n  " + command + "tools/genkey-helper.sh <KEY_DIR>\n\n"
+                 "\n\nGenerate keys with:\n  " + command + "tools/generate-signing-keys.sh --key-dir <KEY_DIR>\n\n"
                  "Then build with:\n  kas build kas-imx-secure.yml:kas-signing-keys.yml")
 
 addhandler imx_check_signing_flags imx_check_fit_signing_keys
