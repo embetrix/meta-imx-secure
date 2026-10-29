@@ -18,6 +18,9 @@ SRC_URI:append = " file://fit.cfg \
 SRC_URI:append:mx9-generic-bsp = " file://rng-ele.cfg \
                                 file://0003-rng-ele-include-allocation-and-cache-headers.patch"
 
+# The i.MX95 FRDM defconfig lacks the shared buffer set by the EVK defconfig
+SRC_URI:append:imx95-15x15-lpddr4x-frdm = " file://rng-ele-imx95.cfg"
+
 do_uboot_assemble_fitimage[file-checksums] += "${@imx_fit_key_checksums(d)}"
 
 # OE-Core only warns when the control DTB is missing
