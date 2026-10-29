@@ -6,13 +6,16 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 # Use the BSP boot flow for signed AHAB targets
 IMX_FIT_BOOT_CONFIG ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', \
     bb.utils.contains('UBOOT_SECURE_BOOT_CONFIG', 'file://ahab.cfg', \
-        'fit-ahab.cfg', 'fit-mmc.cfg', d), \
-    'fit-mmc.cfg', d)}"
+                                                  'fit-ahab.cfg', 'fit-mmc.cfg', d), \
+                                                  'fit-mmc.cfg', d)}"
 
 SRC_URI:append = " file://fit.cfg \
                    file://${IMX_FIT_BOOT_CONFIG} \
                    file://fit-boot.dtsi;subdir=${BP}/include \
                    ${@bb.utils.contains('UBOOT_SIGN_ENABLE', '1', 'file://0001-bootm-always-verify-signed-fit.patch', '', d)}"
+
+# Provide a fresh KASLR seed from ELE on i.MX9
+SRC_URI:append:mx9-generic-bsp = " file://rng-ele.cfg"
 
 do_uboot_assemble_fitimage[file-checksums] += "${@imx_fit_key_checksums(d)}"
 
