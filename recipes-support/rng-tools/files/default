@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
+# Use the hardware RNG and skip RNDR, jitter and named pipe sources
+EXTRA_ARGS="-r /dev/hwrng -x rndr -x jitter -x namedpipe"
