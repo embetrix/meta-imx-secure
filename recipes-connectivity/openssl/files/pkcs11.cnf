@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
+[openssl_init]
+providers = provider_sect
+alg_section = algorithm_sect
+
+[algorithm_sect]
+# Use the default provider for normal crypto and PKCS#11 URIs for token keys
+default_properties = ?provider=default
+
+[provider_sect]
+default = default_sect
+pkcs11 = pkcs11_sect
+
+[default_sect]
+activate = 1
+
+[pkcs11_sect]
+module = @libdir@/ossl-modules/pkcs11.so
+pkcs11-module-path = @libdir@/@pkcs11_module@
+activate = 1

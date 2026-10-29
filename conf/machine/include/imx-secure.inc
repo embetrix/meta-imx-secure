@@ -3,6 +3,8 @@
 
 INHERIT += "imx-signing-keys"
 
+OPENSSL_PKCS11_DEFAULT_PROVIDER ??= "optee"
+
 UBOOT_SIGN_ENABLE ?= "${@d.getVar('IMX_SIGN_ENABLE') or '0'}"
 UBOOT_SIGN_KEYDIR ?= ""
 UBOOT_SIGN_KEYNAME ?= "fit"
