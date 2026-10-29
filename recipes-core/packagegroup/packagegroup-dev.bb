@@ -27,4 +27,5 @@ RDEPENDS:packagegroup-dev = " \
     htop \
     iperf3 \
     can-utils \
+    avb-utils \
     "

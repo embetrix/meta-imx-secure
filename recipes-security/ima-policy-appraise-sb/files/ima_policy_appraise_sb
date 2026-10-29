@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+#
+# IMA/EVM extended secure boot appraise policy
+# Extends the hardware secure boot chain into the Linux by
+# enforcing ima/evm signatures verification on :
+# executables, libraries, kernel modules, ima policy and firmware on all filesystems
+#
+# Documentation: https://ima-doc.readthedocs.io/en/latest/policy-syntax.html
+#
+
+# Enforce signature checks for executables, shared libraries,
+# firmware, kernel modules and IMA policy
+appraise func=BPRM_CHECK mask=MAY_EXEC appraise_type=imasig
+appraise func=MMAP_CHECK mask=MAY_EXEC appraise_type=imasig
+appraise func=FIRMWARE_CHECK appraise_type=imasig
+appraise func=MODULE_CHECK appraise_type=imasig
+appraise func=POLICY_CHECK appraise_type=imasig

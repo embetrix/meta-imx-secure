@@ -6,11 +6,11 @@
 # Slot A is populated and stays on partitions 1 and 2
 
 part imx-boot --ondisk mmcblk --source rawcopy --sourceparams="file=${IMX_BOOTLOADER}" --no-table --align ${IMX_BOOT_SEEK}
-part /boot    --ondisk mmcblk --part-name bootA --label bootA --fixed-size 512M  --fstype=vfat --source bootimg-partition --align 8192 --active
-part /        --ondisk mmcblk --part-name rootA --label rootA --fixed-size 1024M --fstype=${ROOTFS_TYPE} --source rootfs
-part          --ondisk mmcblk --part-name bootB --label bootB --fixed-size 512M  --fstype=vfat
-part          --ondisk mmcblk --part-name rootB --label rootB --fixed-size 1024M --fstype=${ROOTFS_TYPE}
-part          --ondisk mmcblk --part-name blobs --label blobs --fixed-size 512M  --fstype=ext4
-part          --ondisk mmcblk --part-name data  --label data  --fixed-size 4096M --fstype=ext4
+part /boot    --ondisk mmcblk --part-name bootA --label bootA --fixed-size ${BOOT_PART_SZ}  --fstype=vfat --source bootimg-partition --align 8192 --active
+part /        --ondisk mmcblk --part-name rootA --label rootA --fixed-size ${ROOT_PART_SZ}  --fstype=${ROOTFS_TYPE} --source rootfs_avb_verity
+part          --ondisk mmcblk --part-name bootB --label bootB --fixed-size ${BOOT_PART_SZ}  --fstype=vfat
+part          --ondisk mmcblk --part-name rootB --label rootB --fixed-size ${ROOT_PART_SZ}  --fstype=${ROOTFS_TYPE}
+part          --ondisk mmcblk --part-name blobs --label blobs --fixed-size ${BLOB_PART_SZ}  --fstype=ext4
+part          --ondisk mmcblk --part-name data  --label data  --fixed-size ${DATA_PART_SZ}  --fstype=ext4
 
 bootloader --ptable gpt

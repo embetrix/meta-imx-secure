@@ -24,5 +24,11 @@ do_image_wic[depends] += "linux-yocto-fitimage:do_deploy"
 WKS_FILE = "imx-boot-secure-bootpart.wks.in"
 IMX_BOOTLOADER ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', \
     'imx-boot.tagged.sign', 'imx-boot.tagged', d)}"
-ROOTFS_TYPE ?= "ext4"
-IMAGE_FSTYPES += "wic.gz wic.bmap"
+
+ROOTFS_TYPE  ?= "ext4"
+IMAGE_FSTYPES += "wic.gz wic.bmap ${ROOTFS_TYPE}.avbverity.gz"
+
+BOOT_PART_SZ ?= "512M"
+BLOB_PART_SZ ?= "512M"
+ROOT_PART_SZ ?= "1024M"
+DATA_PART_SZ ?= "4096M"
