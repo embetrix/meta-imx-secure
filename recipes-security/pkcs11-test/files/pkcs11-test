@@ -1,0 +1,276 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
+set -u -o pipefail
+umask 077
+
+usage() {
+    cat <<'EOF'
+Usage: pkcs11-test [--backend both|optee|smw] [--init] [--list-slots]
+                   [--optee-slot ID] [--smw-slot ID]
+
+Test ECDSA P-256 and RSA-2048 signatures, RSA encryption and AES-256-CBC
+encryption with random data. Check signatures and compare decrypted data.
+Both backends are tested by default, using slot ID 0 for each module.
+OP-TEE RSA signatures use 64-byte messages to avoid a known multipart signing
+failure. Other signature inputs and AES inputs use 4096 bytes.
+RSA encryption uses PKCS#1 v1.5 with OP-TEE and OAEP with SMW.
+
+  --list-slots  List slots without changing tokens or generating keys
+  --init        Initialize the selected tokens, erasing their existing objects
+                Use only disposable test tokens
+
+OP-TEE uses TEE user identity authentication without a PIN. Run initialization
+and later tests as the same Linux user. Existing PIN-based tokens must first
+be provisioned for identity authentication separately.
+SMW does not support PIN management and uses its configured subsystem.
+
+Generated test keys stay on the token with random IDs and pkcs11-test labels.
+Logs and random test data stay in a private directory under TMPDIR or /tmp.
+Missing backends and unsupported operations count as failures.
+
+Environment overrides:
+  OPTEE_MODULE  Path to libckteec.so.0
+  SMW_MODULE    Path to libsmw_pkcs11.so.5
+
+Examples:
+  pkcs11-test --list-slots
+  pkcs11-test --init --optee-slot 0 --smw-slot 0
+  pkcs11-test --backend optee
+EOF
+}
+
+backend=both
+initialize=0
+list_slots=0
+optee_slot=0
+smw_slot=0
+while (($#)); do
+    case "$1" in
+        --backend|--optee-slot|--smw-slot)
+            if (($# < 2)); then
+                echo "Missing value for $1" >&2
+                exit 2
+            fi
+            case "$1" in
+                --backend) backend=$2 ;;
+                --optee-slot) optee_slot=$2 ;;
+                --smw-slot) smw_slot=$2 ;;
+            esac
+            shift 2
+            ;;
+        --init) initialize=1; shift ;;
+        --list-slots) list_slots=1; shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
+    esac
+done
+case "$backend" in
+    both) backends=(optee smw) ;;
+    optee|smw) backends=("$backend") ;;
+    *) echo "Invalid backend: $backend" >&2; exit 2 ;;
+esac
+for slot in "$optee_slot" "$smw_slot"; do
+    if [[ ! $slot =~ ^([0-9]+|0[xX][0-9a-fA-F]+)$ ]]; then
+        echo "Invalid slot ID: $slot" >&2
+        exit 2
+    fi
+done
+for command in pkcs11-tool openssl mktemp mkdir cmp cat grep; do
+    command -v "$command" >/dev/null || {
+        echo "Missing command: $command" >&2
+        exit 1
+    }
+done
+
+# Keep software hashing and test data generation independent of the provider
+ssl() { OPENSSL_CONF=/dev/null openssl "$@"; }
+p11() {
+    printf 'Command: pkcs11-tool --module %q --slot %q' "$module" "$slot"
+    printf ' %q' "$@"
+    printf '\n'
+    pkcs11-tool --module "$module" --slot "$slot" "$@"
+}
+# Both modules need a user session for private objects, but no secret PIN
+user_p11() { p11 --login "$@"; }
+
+prepare() {
+    [[ -r $module ]] || { echo "Missing module: $module"; exit 1; }
+    p11 --list-slots > "$work/slots.log"
+    if ((initialize)); then
+        echo "Initializing $name slot $slot"
+        # Empty SO PIN selects OP-TEE identity authentication and is ignored by SMW
+        p11 --init-token --label "pkcs11-test-$name" --so-pin ''
+        if [[ $name == optee ]]; then
+            # C_InitPIN binds the user role to the current TEE identity, with no PIN
+            p11 --login --login-type so --init-pin
+        fi
+    fi
+    if ! user_p11 --list-objects; then
+        if [[ $name == optee ]]; then
+            echo "OP-TEE needs a token initialized for the current Linux user's TEE identity"
+            echo "For a disposable test token, run: pkcs11-test --backend optee --optee-slot $slot --init"
+            echo "This erases existing objects on that token"
+        fi
+        echo "Slot details: $work/slots.log"
+        exit 1
+    fi
+    p11 --list-mechanisms > "$work/mechanisms.log"
+    ssl rand -out "$work/data" 4096
+    ssl dgst -sha256 -binary -out "$work/digest" "$work/data"
+    cat "$work/data" > "$work/changed"
+    printf 'changed' >> "$work/changed"
+    ssl dgst -sha256 -binary -out "$work/changed-digest" "$work/changed"
+}
+
+reject_changed_signature() {
+    local input=$1 signature=$2 mechanism=$3 id=$4
+    if user_p11 --verify --mechanism "$mechanism" --id "$id" \
+        --input-file "$input" --signature-file "$signature" \
+        > "$work/rejected-$id.log" 2>&1; then
+        echo "ERROR: verification accepted changed data"
+        exit 1
+    fi
+    # An unrelated device error must not count as a successful rejection
+    grep -Eiq 'Invalid signature|CKR_SIGNATURE_INVALID' "$work/rejected-$id.log"
+}
+
+test_ec() {
+    local mechanism=ECDSA input="$work/digest" changed="$work/changed-digest"
+    if [[ $name == smw ]]; then
+        # SMW needs a specific hash policy and hashes the original data itself
+        mechanism=ECDSA-SHA256
+        input=$work/data
+        changed=$work/changed
+    fi
+    user_p11 --keypairgen --key-type EC:prime256v1 --usage-sign \
+        --allowed-mechanisms "$mechanism" \
+        --private --sensitive --id "$ec_id" --label "pkcs11-test-ec-$ec_id"
+    user_p11 --sign --mechanism "$mechanism" --id "$ec_id" \
+        --input-file "$input" --output-file "$work/ec.sig"
+    user_p11 --verify --mechanism "$mechanism" --id "$ec_id" \
+        --input-file "$input" --signature-file "$work/ec.sig"
+    reject_changed_signature "$changed" "$work/ec.sig" "$mechanism" "$ec_id"
+}
+
+test_rsa_sign() {
+    local input="$work/data" changed="$work/changed"
+    if [[ $name == optee ]]; then
+        # Avoid the observed empty-message signatures from multipart signing
+        echo "Using short RSA input to avoid the OP-TEE multipart signing failure"
+        ssl rand -out "$work/rsa.data" 64
+        cat "$work/rsa.data" > "$work/rsa.changed"
+        printf 'changed' >> "$work/rsa.changed"
+        input=$work/rsa.data
+        changed=$work/rsa.changed
+    fi
+    user_p11 --keypairgen --key-type RSA:2048 --usage-sign \
+        --allowed-mechanisms SHA256-RSA-PKCS \
+        --private --sensitive --id "$rsa_id" --label "pkcs11-test-rsa-$rsa_id"
+    user_p11 --sign --mechanism SHA256-RSA-PKCS --id "$rsa_id" \
+        --input-file "$input" --output-file "$work/rsa.sig"
+    user_p11 --verify --mechanism SHA256-RSA-PKCS --id "$rsa_id" \
+        --input-file "$input" --signature-file "$work/rsa.sig"
+    reject_changed_signature "$changed" "$work/rsa.sig" SHA256-RSA-PKCS "$rsa_id"
+}
+
+test_rsa_encrypt() {
+    local mechanism=RSA-PKCS
+    local options=()
+    if [[ $name == smw ]]; then
+        # SMW maps RSA-PKCS to signing and its OAEP key policy defaults to SHA-1
+        mechanism=RSA-PKCS-OAEP
+        options=(--hash-algorithm SHA-1 --mgf MGF1-SHA1)
+    fi
+    # Keep signing and encryption keys separate for backends with fixed key usage
+    user_p11 --keypairgen --key-type RSA:2048 --usage-decrypt \
+        --allowed-mechanisms "$mechanism" \
+        --private --sensitive --id "$enc_id" --label "pkcs11-test-rsa-enc-$enc_id"
+    ssl rand -out "$work/rsa.plain" 64
+    user_p11 --encrypt --mechanism "$mechanism" "${options[@]}" --id "$enc_id" \
+        --input-file "$work/rsa.plain" --output-file "$work/rsa.enc"
+    user_p11 --decrypt --mechanism "$mechanism" "${options[@]}" --id "$enc_id" \
+        --input-file "$work/rsa.enc" --output-file "$work/rsa.dec"
+    cmp "$work/rsa.plain" "$work/rsa.dec"
+}
+
+test_aes() {
+    local iv
+    user_p11 --keygen --key-type AES:32 --usage-decrypt \
+        --allowed-mechanisms AES-CBC \
+        --private --sensitive --id "$aes_id" --label "pkcs11-test-aes-$aes_id"
+    iv=$(ssl rand -hex 16)
+    # CBC needs whole blocks, the random input is 4096 bytes
+    user_p11 --encrypt --mechanism AES-CBC --id "$aes_id" --iv "$iv" \
+        --input-file "$work/data" --output-file "$work/aes.enc"
+    user_p11 --decrypt --mechanism AES-CBC --id "$aes_id" --iv "$iv" \
+        --input-file "$work/aes.enc" --output-file "$work/aes.dec"
+    cmp "$work/data" "$work/aes.dec"
+}
+
+passed=0
+failed=0
+last_status=0
+run_test() {
+    local title=$1 function=$2
+    # Run outside an if condition so errexit stops at the first failed command
+    (set -e; "$function") > "$work/$title.log" 2>&1
+    last_status=$?
+    if ((last_status == 0)); then
+        echo "PASS $name: $title"
+        passed=$((passed + 1))
+    else
+        echo "FAIL $name: $title"
+        cat "$work/$title.log"
+        failed=$((failed + 1))
+    fi
+}
+
+if ((list_slots)); then
+    for name in "${backends[@]}"; do
+        if [[ $name == optee ]]; then
+            module=${OPTEE_MODULE:-@libdir@/libckteec.so.0}
+        else
+            module=${SMW_MODULE:-@libdir@/libsmw_pkcs11.so.5}
+        fi
+        echo "=== $name: $module ==="
+        pkcs11-tool --module "$module" --list-slots || failed=$((failed + 1))
+    done
+    ((failed == 0))
+    exit $?
+fi
+
+results=$(mktemp -d "${TMPDIR:-/tmp}/pkcs11-test.XXXXXX") || exit 1
+echo "Logs and test data: $results"
+for name in "${backends[@]}"; do
+    work=$results/$name
+    mkdir "$work" || exit 1
+    if [[ $name == optee ]]; then
+        module=${OPTEE_MODULE:-@libdir@/libckteec.so.0}
+        slot=$optee_slot
+        export CKTEEC_LOGIN_TYPE=user
+    else
+        module=${SMW_MODULE:-@libdir@/libsmw_pkcs11.so.5}
+        slot=$smw_slot
+    fi
+    ec_id=$(ssl rand -hex 8) || exit 1
+    rsa_id=$(ssl rand -hex 8) || exit 1
+    enc_id=$(ssl rand -hex 8) || exit 1
+    aes_id=$(ssl rand -hex 8) || exit 1
+    printf '%s\n' "module=$module slot=$slot" "ec=$ec_id rsa-sign=$rsa_id rsa-encrypt=$enc_id aes=$aes_id" \
+        > "$work/keys.txt"
+    echo "=== $name: $module, slot $slot ==="
+    run_test setup prepare
+    if ((last_status != 0)); then
+        echo "Remaining $name tests were not run because setup failed"
+        continue
+    fi
+    run_test ecdsa-sign-verify test_ec
+    run_test rsa-sign-verify test_rsa_sign
+    run_test rsa-encrypt-decrypt test_rsa_encrypt
+    run_test aes-encrypt-decrypt test_aes
+done
+echo "Results: $passed passed, $failed failed"
+echo "Logs and retained key IDs: $results"
+((failed == 0))

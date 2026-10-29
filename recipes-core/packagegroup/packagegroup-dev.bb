@@ -22,6 +22,7 @@ RDEPENDS:packagegroup-dev = " \
     devmem2 \
     i2c-tools \
     opensc \
+    pkcs11-test \
     curl \
     htop \
     iperf3 \
