@@ -1,0 +1,64 @@
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Subject: [PATCH] imx: disable the UART console for production
+
+Skip UART console registration on i.MX91, i.MX93 and the shared i.MX9
+platform used by i.MX95. Disabling logs alone leaves the console active.
+This patch is applied only for the production security profile.
+
+Upstream-Status: Inappropriate [security hardening policy]
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+diff --git a/plat/imx/imx91/imx91_bl31_setup.c b/plat/imx/imx91/imx91_bl31_setup.c
+--- a/plat/imx/imx91/imx91_bl31_setup.c
++++ b/plat/imx/imx91/imx91_bl31_setup.c
+@@ -73,14 +73,6 @@
+ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
+ 		u_register_t arg2, u_register_t arg3)
+ {
+-	static console_t console;
+-
+-	console_lpuart_register(IMX_LPUART_BASE, IMX_BOOT_UART_CLK_IN_HZ,
+-		     IMX_CONSOLE_BAUDRATE, &console);
+-
+-	/* This console is only used for boot stage */
+-	console_set_scope(&console, CONSOLE_FLAG_BOOT);
+-
+ 	/*
+ 	 * tell BL3-1 where the non-secure software image is located
+ 	 * and the entry state information.
+diff --git a/plat/imx/imx93/imx93_bl31_setup.c b/plat/imx/imx93/imx93_bl31_setup.c
+--- a/plat/imx/imx93/imx93_bl31_setup.c
++++ b/plat/imx/imx93/imx93_bl31_setup.c
+@@ -68,14 +68,6 @@
+ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
+ 		u_register_t arg2, u_register_t arg3)
+ {
+-	static console_t console;
+-
+-	console_lpuart_register(IMX_LPUART_BASE, IMX_BOOT_UART_CLK_IN_HZ,
+-		     IMX_CONSOLE_BAUDRATE, &console);
+-
+-	/* This console is only used for boot stage */
+-	console_set_scope(&console, CONSOLE_FLAG_BOOT);
+-
+ 	/*
+ 	 * tell BL3-1 where the non-secure software image is located
+ 	 * and the entry state information.
+diff --git a/plat/imx/imx9/common/imx9_bl31_setup.c b/plat/imx/imx9/common/imx9_bl31_setup.c
+--- a/plat/imx/imx9/common/imx9_bl31_setup.c
++++ b/plat/imx/imx9/common/imx9_bl31_setup.c
+@@ -47,14 +47,6 @@
+ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
+ 		u_register_t arg2, u_register_t arg3)
+ {
+-	static console_t console;
+-
+-	console_lpuart_register(IMX_LPUART_BASE, IMX_BOOT_UART_CLK_IN_HZ,
+-		     IMX_CONSOLE_BAUDRATE, &console);
+-
+-	/* this console is only used for boot stage */
+-	console_set_scope(&console, CONSOLE_FLAG_BOOT);
+-
+ 	/*
+ 	 * tell bl3-1 where the non-secure software image is located
+ 	 * and the entry state information.
