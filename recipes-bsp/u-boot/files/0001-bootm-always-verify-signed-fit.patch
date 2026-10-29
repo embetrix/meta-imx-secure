@@ -6,7 +6,7 @@ Subject: [PATCH] bootm: Always verify signed FIT images
 Keep FIT verification enabled when signature support is built in.
 The verify environment variable must not skip required key checks.
 
-Upstream-Status: Inappropriate [layer signing policy]
+Upstream-Status: Inappropriate [security hardening policy]
 Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
 ---
  boot/bootm.c | 3 ++-

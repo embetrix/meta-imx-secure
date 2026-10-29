@@ -1,0 +1,25 @@
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Subject: [PATCH] console: disable input and output when configured
+
+Set the runtime flag before the console starts printing. Enabling
+CONFIG_DISABLE_CONSOLE alone only builds the flag checks.
+
+Upstream-Status: Inappropriate [layer production policy]
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+ common/console.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/common/console.c b/common/console.c
+--- a/common/console.c
++++ b/common/console.c
+@@ -1025,6 +1025,9 @@ static bool console_update_silent(void)
+ /* Called before relocation - use serial functions */
+ int console_init_f(void)
+ {
++	if (IS_ENABLED(CONFIG_DISABLE_CONSOLE))
++		gd->flags |= GD_FLG_DISABLE_CONSOLE;
++
+ 	gd->flags |= GD_FLG_HAVE_CONSOLE;
+ 
+ 	console_update_silent();
