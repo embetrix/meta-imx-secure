@@ -27,5 +27,5 @@ UBOOT_SECURE_BOOT_CONFIG:mx8-generic-bsp  = "file://ahab.cfg"
 UBOOT_SECURE_BOOT_CONFIG:mx9-generic-bsp  = "file://ahab.cfg"
 UBOOT_SECURE_BOOT_CONFIG:mx8m-generic-bsp = "file://hab.cfg"
 
-SRC_URI:append = " ${@bb.utils.contains('IMX_SIGN_ENABLE', '1', d.getVar('UBOOT_SECURE_BOOT_CONFIG'), '', d)} \
-                   ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://security-harden.cfg file://0002-console-disable-console-when-configured.patch', '', d)}"
+# Leave production hardening disabled until the i.MX95 boot issue is fixed
+SRC_URI:append = " ${@bb.utils.contains('IMX_SIGN_ENABLE', '1', d.getVar('UBOOT_SECURE_BOOT_CONFIG'), '', d)}"
