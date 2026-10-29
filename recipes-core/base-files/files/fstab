@@ -4,7 +4,7 @@
 # security-hardened mount table
 # All mount points with restrictive options to reduce attack surface
 #
-/dev/root            /                    auto       defaults                                  1 1
+/dev/root            /                    auto       defaults                                   1 1
 proc                 /proc                proc       hidepid=2,nosuid,nodev,noexec              0 0
 sysfs                /sys                 sysfs      nosuid,nodev,noexec                        0 0
 securityfs           /sys/kernel/security securityfs nosuid,nodev,noexec                        0 0
