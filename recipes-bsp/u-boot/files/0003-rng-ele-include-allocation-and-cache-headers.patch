@@ -1,0 +1,27 @@
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Subject: [PATCH] rng: ele: include allocation and cache headers
+
+The ELE RNG driver uses memalign(), free() and ARCH_DMA_MINALIGN when
+CONFIG_ELE_SHARED_BUFFER is unset. Include their headers so this path
+builds on i.MX95.
+
+Upstream-Status: Pending
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+ drivers/rng/ele_rng.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/rng/ele_rng.c b/drivers/rng/ele_rng.c
+--- a/drivers/rng/ele_rng.c
++++ b/drivers/rng/ele_rng.c
+@@ -3,8 +3,10 @@
+  */
+ 
+ #include <dm.h>
++#include <malloc.h>
+ #include <rng.h>
+ #include <linux/kernel.h>
++#include <asm/cache.h>
+ #include <asm/mach-imx/ele_api.h>
+ 
+ U_BOOT_DRVINFO(ele_rng) = {
