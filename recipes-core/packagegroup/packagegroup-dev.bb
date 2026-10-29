@@ -21,7 +21,6 @@ RDEPENDS:packagegroup-dev = " \
     strace \
     devmem2 \
     i2c-tools \
-    curl \
     opensc \
     curl \
     htop \
