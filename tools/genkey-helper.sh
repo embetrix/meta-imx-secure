@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-# Generate AHAB SRK pairs, a FIT key and a kas signing-keys fragment
+# Generate AHAB, FIT, module, IMA/EVM and AVB keys plus a kas fragment
 # Usage: tools/genkey-helper.sh [KEY_DIR] [KAS_FRAGMENT] [KEY_TYPE] [FIT_KEY_TYPE] [PQC_KEY_TYPE]
 # Defaults: imx-secure-keys, kas-signing-keys.yml, secp384r1, rsa2048 and none
 # Key types can also be set with KEY_TYPE, FIT_KEY_TYPE and PQC_KEY_TYPE
@@ -24,6 +24,9 @@ usage() {
     echo "FIT key types: rsa2048 (default), rsa3072, rsa4096"
     echo "PQC key types: none (default), mldsa65, mldsa87"
     echo "PQC keys need OpenSSL 3.5 or newer with ML-DSA support and a supported SoC revision"
+    echo "Module signing: EC prime256v1 key and PEM certificate"
+    echo "IMA/EVM signing: EC prime256v1 key and DER certificate"
+    echo "AVB signing: RSA 4096 key and PEM certificate"
 }
 
 hsm_notice() {
@@ -91,6 +94,64 @@ generate_srk_keys() {
         chmod 600 "$private"
         chmod 644 "$public"
     done
+}
+
+generate_signing_pair() {
+    name=$1
+    key_type=$2
+    cert_format=$3
+    subject=$4
+    private="$KEY_DIR/privkey_${name}.pem"
+    case "$cert_format" in
+        PEM) certificate="$KEY_DIR/x509_${name}.pem" ;;
+        DER) certificate="$KEY_DIR/x509_${name}.der" ;;
+    esac
+    case "$key_type" in
+        rsa4096)
+            algorithm=RSA
+            option_value=rsa_keygen_bits:4096
+            pattern="Public-Key: (4096 bit)"
+            ;;
+        prime256v1|secp384r1)
+            algorithm=EC
+            option_value="ec_paramgen_curve:$key_type"
+            pattern="ASN1 OID: $key_type"
+            ;;
+    esac
+    [ ! -L "$private" ] && [ ! -L "$certificate" ] || die "$name files must not be symlinks"
+    if [ -e "$private" ]; then
+        echo "Checking $private ($key_type)"
+    else
+        [ ! -e "$certificate" ] || die "$certificate exists without its private key"
+        echo "Generating $private ($key_type)"
+        openssl genpkey -algorithm "$algorithm" -pkeyopt "$option_value" \
+            -out "$TEMP_DIR/signing.key"
+        ln "$TEMP_DIR/signing.key" "$private"
+        rm "$TEMP_DIR/signing.key"
+    fi
+    openssl pkey -in "$private" -passin pass: -check -noout >/dev/null ||
+        die "Invalid or encrypted private key: $private"
+    openssl pkey -in "$private" -passin pass: -pubout -out "$TEMP_DIR/signing.pub"
+    openssl pkey -pubin -in "$TEMP_DIR/signing.pub" -text -noout > "$TEMP_DIR/signing-public.txt"
+    grep -Fxq "$pattern" "$TEMP_DIR/signing-public.txt" || die "$private must use $key_type"
+    if [ ! -e "$certificate" ]; then
+        openssl req -new -x509 -sha256 -days 3650 -batch \
+            -subj "/CN=$subject/O=Embetrix" \
+            -addext "basicConstraints=critical,CA:FALSE" \
+            -addext "keyUsage=digitalSignature" \
+            -addext "extendedKeyUsage=critical,codeSigning" \
+            -addext "subjectKeyIdentifier=hash" \
+            -key "$private" -passin pass: -outform "$cert_format" -out "$TEMP_DIR/signing.crt"
+        ln "$TEMP_DIR/signing.crt" "$certificate"
+        rm "$TEMP_DIR/signing.crt"
+    fi
+    openssl x509 -inform "$cert_format" -in "$certificate" -pubkey -noout > "$TEMP_DIR/signing-cert.pub"
+    openssl pkey -pubin -in "$TEMP_DIR/signing-cert.pub" -outform DER -out "$TEMP_DIR/signing-cert.der"
+    openssl pkey -pubin -in "$TEMP_DIR/signing.pub" -outform DER -out "$TEMP_DIR/signing-key.der"
+    cmp -s "$TEMP_DIR/signing-cert.der" "$TEMP_DIR/signing-key.der" ||
+        die "$certificate does not match $private"
+    chmod 600 "$private"
+    chmod 644 "$certificate"
 }
 
 case "${1:-}" in
@@ -167,8 +228,22 @@ if [ "$PQC_KEY_TYPE" != none ]; then
         '    IMX_SIGN_PQC_KEYDIR = "${IMX_SIGN_KEYDIR}/mldsa"' >> "$TEMP_DIR/kas.yml"
     [ ! -L "$KEY_DIR/mldsa" ] || die "The generated PQC key directory must not be a symlink"
 fi
+cp "$TEMP_DIR/kas.yml" "$TEMP_DIR/kas-boot.yml"
+cat > "$TEMP_DIR/kas-extra-keys.yml" <<EOF
+    MODSIGN_PRIVKEY ?= "$KEY_DIR/privkey_modsign.pem"
+    MODSIGN_X509 ?= "$KEY_DIR/x509_modsign.pem"
+    IMA_EVM_PRIVKEY ?= "$KEY_DIR/privkey_ima.pem"
+    IMA_EVM_X509 ?= "$KEY_DIR/x509_ima.der"
+    AVB_SIGN_KEY ?= "$KEY_DIR/privkey_avb.pem"
+    AVB_X509 ?= "$KEY_DIR/x509_avb.pem"
+EOF
+cat "$TEMP_DIR/kas-classical.yml" "$TEMP_DIR/kas-extra-keys.yml" > "$TEMP_DIR/kas-classical-full.yml"
+cat "$TEMP_DIR/kas-extra-keys.yml" >> "$TEMP_DIR/kas.yml"
+# Accept older generated fragments and allow PQC to be added later
 if [ -e "$KAS_FRAGMENT" ]; then
     cmp -s "$TEMP_DIR/kas.yml" "$KAS_FRAGMENT" ||
+        cmp -s "$TEMP_DIR/kas-classical-full.yml" "$KAS_FRAGMENT" ||
+        cmp -s "$TEMP_DIR/kas-boot.yml" "$KAS_FRAGMENT" ||
         cmp -s "$TEMP_DIR/kas-classical.yml" "$KAS_FRAGMENT" ||
         cmp -s "$TEMP_DIR/kas-fit.yml" "$KAS_FRAGMENT" ||
         cmp -s "$TEMP_DIR/kas-ahab.yml" "$KAS_FRAGMENT" ||
@@ -211,6 +286,11 @@ cmp -s "$TEMP_DIR/fit-cert.der" "$TEMP_DIR/fit-key.der" ||
     die "$certificate does not match $private"
 chmod 600 "$private"
 chmod 644 "$certificate"
+
+# Keep separate keys for each signing role
+generate_signing_pair modsign prime256v1 PEM "i.MX module signing"
+generate_signing_pair ima prime256v1 DER "i.MX IMA-EVM signing"
+generate_signing_pair avb rsa4096 PEM "i.MX AVB signing"
 
 if [ ! -e "$KAS_FRAGMENT" ]; then
     (set -C; cat "$TEMP_DIR/kas.yml" > "$KAS_FRAGMENT")
