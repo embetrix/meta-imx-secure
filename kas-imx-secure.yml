@@ -78,6 +78,19 @@ repos:
       meta-imx-bsp:
       meta-imx-sdk:
 
+  meta-avb:
+    url: "https://github.com/embetrix/meta-avb.git"
+    branch: wrynose
+    path: "layers/meta-avb"
+
+  meta-security:
+    url: https://git.yoctoproject.org/meta-security
+    branch: wrynose
+    path: "layers/meta-security"
+    layers:
+      .:
+      meta-integrity:
+
 local_conf_header:
   base: |
     CONF_VERSION = "2"
