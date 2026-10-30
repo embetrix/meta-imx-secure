@@ -12,8 +12,7 @@ PACKAGES = "${PN}"
 SUMMARY:packagegroup-ima = "IMA/EVM support"
 
 RDEPENDS:packagegroup-ima = " \
-        ima-evm-utils \
         ima-policy-appraise-sb \
         ima-evm-keys \
-        attr \
+        ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'ima-evm-utils attr', '', d)} \
        "
