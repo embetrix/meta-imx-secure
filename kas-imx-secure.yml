@@ -91,9 +91,14 @@ repos:
       .:
       meta-integrity:
 
+env:
+  SECURITY_PROFILE: "dev"
+
 local_conf_header:
   base: |
     CONF_VERSION = "2"
     INHERIT += "rm_work"
   license: |
     ACCEPT_FSL_EULA = "1"
+  security: |
+    IMX_SECURITY_PROFILE = "${SECURITY_PROFILE}"
