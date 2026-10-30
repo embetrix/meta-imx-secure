@@ -21,18 +21,23 @@ KERNEL_CLASSES:append = " kernel-fit-extra-artifacts"
 UBOOT_ENTRYPOINT:mx91-generic-bsp ?= "0x80400000"
 UBOOT_ENTRYPOINT:mx95-generic-bsp ?= "0x90400000"
 
+# Initramfs Bundle
+INITRAMFS_IMAGE        ?= "imx-secure-initramfs-image"
+INITRAMFS_IMAGE_NAME   ?= "imx-secure-initramfs-image-${MACHINE}.rootfs"
+INITRAMFS_IMAGE_BUNDLE  = "1"
+
 # Boot image and disk layout
 IMX_BOOTLOADER ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', \
     'imx-boot.tagged.sign', 'imx-boot.tagged', d)}"
 WKS_FILE = "imx-boot-secure-bootpart.wks.in"
 
 # Keep BSP additions out of the active boot partition
-IMAGE_BOOT_FILES_label-bootA = "fitImage"
-WICVARS:append = " IMAGE_BOOT_FILES_label-bootA"
+IMAGE_BOOT_FILES = "fitImage"
+WICVARS:append = " IMAGE_BOOT_FILES_label-boot_a"
 do_image_wic[depends] += "linux-yocto-fitimage:do_deploy"
 
 # Root filesystem and output formats
-ROOTFS_TYPE ?= "ext4"
+ROOTFS_TYPE ?= "erofs"
 AVB_ROOT_HASH_SIGN ?= "1"
 IMAGE_FSTYPES += "wic.gz wic.bmap ${ROOTFS_TYPE}.avbverity.gz"
 

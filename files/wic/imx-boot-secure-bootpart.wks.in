@@ -3,14 +3,14 @@
 
 # Description: Create an i.MX GPT disk image with A/B boot and root partitions
 # plus secdata and data volumes
-# Slot A is populated and stays on partitions 1 and 2
+# Boot A is populated and root B holds the image for first-boot encryption
 
 part imx-boot --ondisk mmcblk --source rawcopy    --sourceparams="file=${IMX_BOOTLOADER}" --no-table --align ${IMX_BOOT_SEEK}
-part /boot    --ondisk mmcblk --part-name bootA   --label bootA   --fixed-size ${BOOT_PART_SZ}     --fstype=vfat --source bootimg-partition --align 8192 --active
-part /        --ondisk mmcblk --part-name rootA   --label rootA   --fixed-size ${ROOT_PART_SZ}     --fstype=${ROOTFS_TYPE} --source rootfs_avb_verity
-part          --ondisk mmcblk --part-name bootB   --label bootB   --fixed-size ${BOOT_PART_SZ}     --fstype=vfat
-part          --ondisk mmcblk --part-name rootB   --label rootB   --fixed-size ${ROOT_PART_SZ}     --fstype=${ROOTFS_TYPE}
-part          --ondisk mmcblk --part-name secdata --label secdata --fixed-size ${SECDATA_PART_SZ}  --fstype=ext4
-part          --ondisk mmcblk --part-name data    --label data    --fixed-size ${DATA_PART_SZ}     --fstype=ext4
+part /boot    --ondisk mmcblk --part-name boot_a  --label boot_a --fixed-size ${BOOT_PART_SZ} --fstype=vfat --source bootimg-partition --align 8192 --active
+part /        --ondisk mmcblk --part-name root_a  --fixed-size ${ROOT_PART_SZ}
+part          --ondisk mmcblk --part-name boot_b  --fixed-size ${BOOT_PART_SZ}     --fstype=vfat
+part          --ondisk mmcblk --part-name root_b  --fixed-size ${ROOT_PART_SZ}     --fstype=${ROOTFS_TYPE} --source rootfs_avb_verity
+part          --ondisk mmcblk --part-name secdata --fixed-size ${SECDATA_PART_SZ}  --fstype=ext4
+part          --ondisk mmcblk --part-name data    --fixed-size ${DATA_PART_SZ}     --fstype=ext4
 
 bootloader --ptable gpt
