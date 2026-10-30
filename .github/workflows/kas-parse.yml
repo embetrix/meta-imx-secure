@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: MIT
+name: Parse kas configuration
+
+on:
+  push:
+    branches: [wrynose]
+    paths-ignore:
+      - '**/*.md'
+      - COPYING.MIT
+  pull_request:
+    branches: [wrynose]
+    paths-ignore:
+      - '**/*.md'
+      - COPYING.MIT
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kas-parse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  container:
+    uses: ./.github/workflows/container.yml
+
+  parse:
+    needs: container
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        machine:
+          - imx91-11x11-lpddr4-frdm
+          - imx93-11x11-lpddr4x-frdm
+          - imx95-15x15-lpddr4x-frdm
+        profile: [dev, prod]
+    name: Parse ${{ matrix.machine }} (${{ matrix.profile }})
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ci-container
+          path: ${{ runner.temp }}
+
+      - name: Load CI container
+        run: docker load --input "$RUNNER_TEMP/imx-secure-ci.tar"
+
+      - name: Parse recipes without building
+        env:
+          KAS_MACHINE: ${{ matrix.machine }}
+          SECURITY_PROFILE: ${{ matrix.profile }}
+          KAS_CLONE_DEPTH: '1'
+        run: |
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --volume "$GITHUB_WORKSPACE:/work" \
+            --workdir /work \
+            --env KAS_MACHINE \
+            --env SECURITY_PROFILE \
+            --env KAS_CLONE_DEPTH \
+            imx-secure-ci:check bash -euc '
+              # Generate disposable keys for parsing the signing configuration
+              tools/generate-signing-keys.sh
+              kas shell kas-imx-secure.yml:kas-signing-keys.yml \
+                --command "bitbake --parse-only imx-secure-image"
+            '
