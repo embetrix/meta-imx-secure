@@ -44,7 +44,7 @@ KMK_BLOB="$SECDATA_MNT/keys/kmk.blob"
 ENC_KEY_BLOB="$SECDATA_MNT/keys/enc-key.blob"
 KEY_SZ=32
 
-HW_SERIAL="/proc/device-tree/serial-number"
+HW_SERIAL="/sys/devices/soc0/serial_number"
 
 MACHINE_ID=""
 
@@ -136,8 +136,11 @@ fsck_quiet fsck.vfat -y -w "$BOOTUPDATE_DEV" || klog "fsck on $BOOTUPDATE_DEV re
 mount -t vfat -o $OPT_PART $BOOTUPDATE_DEV "$ROOT_MNT$BOOTUPDATE_MNT" \
 	|| fatal "cannot mount boot update device $BOOTUPDATE_DEV"
 
-# Derive Machine ID from HW_SERIAL
-MACHINE_ID="$(tr -d '\0\n' < "$HW_SERIAL" | sha256sum | cut -c1-32)"
+# Derive the machine ID from the SoC serial number
+serial=$(tr -d '\0\n' < "$HW_SERIAL") \
+	|| fatal "cannot read SoC serial number"
+[ -n "$serial" ] || fatal "SoC serial number is empty"
+MACHINE_ID="$(printf '%s' "$serial" | sha256sum | cut -c1-32)"
 
 # Setup EVM
 setup_evm_integrity
