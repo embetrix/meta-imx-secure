@@ -301,7 +301,7 @@ BSP layers are pinned to NXP `LF6.18.37_2.1.0`. Other repos follow Wrynose. See 
 
 ## Commercial support
 
-Maintained by Embetrix Embedded Systems Solutions. Contact [info@embetrix.com](mailto:info@embetrix.com) for custom development, board support, integration, provisioning, key management and maintenance.
+Maintained by [Embetrix](https://embetrix.com) Embedded Systems Solutions. Contact [info@embetrix.com](mailto:info@embetrix.com) for custom development, board support, integration, provisioning, key management and maintenance.
 
 ## License
 
