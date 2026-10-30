@@ -17,24 +17,8 @@ setup_block_devices() {
 		*) fatal "unsupported or missing root= argument: $root_spec" ;;
 	esac
 
-	case "$root_spec" in
-		/dev/*) ROOT_DEV="$root_spec" ;;
-		*)
-			# No udev in initramfs, so resolve partition tags with blkid
-			attempt=0
-			while [ "$attempt" -lt "$TIMEOUT" ]; do
-				ROOT_DEV=$(blkid -c /dev/null -t "$root_spec" -o device)
-				case "$ROOT_DEV" in
-					*[[:space:]]*) fatal "root= matches more than one device: $root_spec" ;;
-					?*) break ;;
-				esac
-				attempt=$((attempt + 1))
-				sleep 0.1
-			done
-			[ -n "$ROOT_DEV" ] || fatal "timeout resolving root=$root_spec"
-			;;
-	esac
-	await_blockdev "$ROOT_DEV"
+	await_blockdev "$root_spec"
+	ROOT_DEV="$BLOCK_DEV"
 
 	ROOT_DEV=$(readlink -f "$ROOT_DEV") || fatal "cannot resolve root device"
 	root_name=${ROOT_DEV##*/}

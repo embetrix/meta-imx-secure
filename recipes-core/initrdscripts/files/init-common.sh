@@ -51,19 +51,26 @@ mount_early_fs() {
 	mount -t securityfs securityfs /sys/kernel/security
 }
 
+# Wait for a device path or partition tag and set BLOCK_DEV
 await_blockdev() {
 
 	i=0
 	while [ "$i" -lt "$TIMEOUT" ]; do
-		if test -b "$1"; then
-			break
-		fi
+		case "$1" in
+			PARTUUID=*|PARTLABEL=*)
+				# No udev in initramfs, so resolve partition tags with blkid
+				BLOCK_DEV=$(blkid -c /dev/null -t "$1" -o device)
+				case "$BLOCK_DEV" in
+					*[[:space:]]*) fatal "multiple block devices match $1" ;;
+				esac
+				;;
+			*) BLOCK_DEV="$1" ;;
+		esac
+		test -b "$BLOCK_DEV" && return 0
 		i=$((i + 1))
 		sleep 0.1
 	done
-	if [ "$i" -eq "$TIMEOUT" ]; then
-		fatal "Timeout waiting for $1"
-	fi
+	fatal "Timeout waiting for $1"
 }
 
 watchdog_feed_start() {
