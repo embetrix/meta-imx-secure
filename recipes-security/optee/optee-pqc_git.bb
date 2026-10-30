@@ -6,13 +6,13 @@ HOMEPAGE = "https://github.com/embetrix/optee-pqc"
 LICENSE = "BSD-2-Clause & BSD-3-Clause"
 LIC_FILES_CHKSUM = " \
     file://LICENSE;md5=b2afbf75a2458dfa60426cd39a9d35cc \
-    file://external/leancrypto/LICENSE;md5=b00845406d87e919d7995d9b51e06861 \
+    file://external/leancrypto/LICENSE;md5=581f53c96a634ae7f241516370a8f1ee \
     file://external/leancrypto/LICENSE.bsd;md5=66a5cedaf62c4b2637025f049f9b826f \
 "
 
 # The source commit also pins the leancrypto submodule
 SRC_URI = "gitsm://github.com/embetrix/optee-pqc.git;protocol=https;branch=main"
-SRCREV = "fa58b54acb280d61848dbe760b5cbb9b9ee12527"
+SRCREV = "783ba562dcb07b5c52014c02560bd5fca50181e8"
 PV = "0.1+git"
 
 inherit cmake python3native features_check
@@ -34,6 +34,7 @@ EXTRA_OECMAKE = " \
     -DPQC_TA_DEV_KIT=${PQC_TA_DEV_KIT} \
     -DPQC_TA_CROSS_COMPILE=${PQC_TA_CROSS_COMPILE} \
     -DPQC_TA_INSTALL_DIR=${nonarch_base_libdir}/optee_armtz \
+    -DPQC_LEANCRYPTO_ASM=ON \
 "
 
 # Keep Linux flags out of the TA build, which uses the devkit's ABI settings
@@ -54,7 +55,7 @@ do_install:append() {
     rmdir ${D}${nonarch_base_libdir}/optee_armtz
     install -D -m 0644 ${B}/ta/${PQC_TA_UUID}.stripped.elf \
         ${D}${datadir}/optee-pqc/${PQC_TA_UUID}.stripped.elf
-    install -D -m 0755 ${S}/tests/optee-pqc-test.sh ${D}${bindir}/optee-pqc-test
+    install -D -m 0755 ${S}/tests/pqc-tz-test.sh ${D}${bindir}/pqc-tz-test
 }
 
 PACKAGES =+ "${PN}-early-ta"
