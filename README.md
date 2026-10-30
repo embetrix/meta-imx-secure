@@ -290,7 +290,7 @@ BSP layers are pinned to NXP `LF6.18.37_2.1.0`. Other repos follow Wrynose. See 
 | Repository | Branch | Layers |
 | --- | --- | --- |
 | [openembedded-core](https://github.com/openembedded/openembedded-core/tree/wrynose) | `wrynose` | meta |
-| [meta-yocto](https://git.yoctoproject.org/meta-yocto/tree/?h=wrynose) | `wrynose` | meta-poky |
+| [meta-yocto](https://git.yoctoproject.org/meta-yocto/tree/?h=wrynose) | `wrynose` | meta-poky (required by meta-imx-sdk) |
 | [meta-openembedded](https://github.com/openembedded/meta-openembedded/tree/wrynose) | `wrynose` | meta-oe, meta-python, meta-perl, meta-networking and meta-multimedia |
 | [meta-arm](https://git.yoctoproject.org/meta-arm/tree/?h=wrynose) | `wrynose` | meta-arm and meta-arm-toolchain |
 | [meta-freescale](https://github.com/Freescale/meta-freescale/tree/wrynose) | `wrynose` | meta-freescale |
