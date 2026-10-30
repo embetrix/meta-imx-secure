@@ -114,6 +114,12 @@ check_file() {
 prepare() {
     command -v openssl >/dev/null 2>&1 || die "Install openssl first"
     command -v ssh-keygen >/dev/null 2>&1 || die "Install ssh-keygen first"
+    # CI can run the container with a UID missing from /etc/passwd
+    if ! getent passwd "$(id -u)" >/dev/null 2>&1; then
+        [ -w /etc/passwd ] || die "Current UID has no passwd entry and /etc/passwd is not writable"
+        printf 'build-%s:x:%s:%s::/tmp:/sbin/nologin\n' \
+            "$(id -u)" "$(id -u)" "$(id -g)" >> /etc/passwd
+    fi
     for path in "$KEY_DIR" "$KAS_FRAGMENT"; do
         case "$path" in
             ''|*[!a-zA-Z0-9_./+-]*) die "Use paths containing only letters, digits, /, ., _, + or -" ;;
