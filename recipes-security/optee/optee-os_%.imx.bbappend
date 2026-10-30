@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
+DEPENDS:append = " ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'optee-pqc', '', d)}"
+
 # Log only core and TA errors in development builds, stay silent in production
 EXTRA_OEMAKE:append = " \
     CFG_TEE_CORE_LOG_LEVEL=${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '1', '0', d)} \
@@ -43,6 +45,11 @@ EXTRA_OEMAKE:append = " \
     CFG_IN_TREE_EARLY_TAS+=pkcs11/fd02c9da-306c-48c7-a49c-bbd827ae86ee \
     CFG_IN_TREE_EARLY_TAS+=trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c \
     CFG_IN_TREE_EARLY_TAS+=avb/023f8f1a-292a-432b-8fc4-de8471358067 \
+"
+# Embed the PQC TAs
+EXTRA_OEMAKE:append = " \
+    ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', \
+               'EARLY_TA_PATHS+=${STAGING_DATADIR}/optee-pqc/7b1e6f40-9c32-4da8-a567-71930c4e82b6.stripped.elf', '', d)} \
 "
 
 # Keep only the embedded early TAs
