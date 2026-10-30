@@ -6,6 +6,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += " \
     file://timesyncd.conf \
     file://journal-upload.conf \
+    file://journald-persistent.conf \
+    file://journal-flush-override.conf \
     file://80-wlan.network \
     file://rfkill-override.conf \
     ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://security-harden.conf', '', d)} \
@@ -22,6 +24,11 @@ do_install:append() {
 			"${D}${systemd_unitdir}/$config.conf.d/60-imx-secure.conf"
 	done
 
+	install -D -m 0644 ${UNPACKDIR}/journald-persistent.conf \
+		${D}${systemd_unitdir}/journald.conf.d/60-imx-secure.conf
+	install -D -m 0644 ${UNPACKDIR}/journal-flush-override.conf \
+		${D}${systemd_system_unitdir}/systemd-journal-flush.service.d/60-imx-secure.conf
+
 	install -d ${D}/${systemd_unitdir}/network
 	install -m 644 ${UNPACKDIR}/80-wlan.network ${D}/${systemd_unitdir}/network/
 
@@ -35,5 +42,6 @@ FILES:${PN} += " \
     ${sysconfdir}/sysctl.d \
     ${systemd_unitdir}/timesyncd.conf.d \
     ${systemd_unitdir}/journal-upload.conf.d \
+    ${systemd_system_unitdir}/systemd-journal-flush.service.d \
     ${systemd_system_unitdir}/systemd-rfkill.service.d \
 "
