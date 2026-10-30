@@ -12,7 +12,8 @@ RRECOMMENDS:${PN} += "${PN}-journal-upload ${PN}-container"
 RESOLV_CONF = "stub-resolv"
 
 WATCHDOG_RUNTIME_SEC = "15s"
-WATCHDOG_TIMEOUT = "10min"
+# The i.MX7ULP watchdog driver allows at most 128 seconds
+WATCHDOG_TIMEOUT = "60s"
 
 # Enable uploads when a log server is configured
 SYSTEMD_AUTO_ENABLE:${PN}-journal-upload = "disable"
