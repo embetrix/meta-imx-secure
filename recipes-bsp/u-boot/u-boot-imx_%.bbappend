@@ -10,6 +10,7 @@ IMX_FIT_BOOT_CONFIG ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', \
                                                   'fit-mmc.cfg', d)}"
 
 SRC_URI:append = " file://fit.cfg \
+                   file://env-fdt.cfg \
                    file://${IMX_FIT_BOOT_CONFIG} \
                    file://fit-boot.dtsi;subdir=${BP}/include \
                    ${@bb.utils.contains('UBOOT_SIGN_ENABLE', '1', 'file://0001-bootm-always-verify-signed-fit.patch', '', d)}"
