@@ -38,7 +38,7 @@ PQC support depends on the SoC, silicon revision and container format. See [NXP'
 
 ### 1. Prepare the host
 
-Install `kas`, OpenSSL, `ssh-keygen`, `bmaptool` and the host dependencies required by the Yocto release used in [kas-imx-secure.yml](kas-imx-secure.yml). Run the following commands from the layer directory.
+Install `kas`, `openssl`, `ssh-keygen`, `bmaptool` and the host dependencies required by the Yocto release used in [kas-imx-secure.yml](kas-imx-secure.yml). Run the following commands from the layer directory.
 
 Use a **16 GB or larger SD card** with the default partition sizes.
 
