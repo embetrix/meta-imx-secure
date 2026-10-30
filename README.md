@@ -232,14 +232,20 @@ See the [NXP nxpele guide](https://spsdk.readthedocs.io/en/latest/apps/nxpele.ht
 
 The A/B layout provides space for updates. An update agent, slot selection policy, boot-success confirmation and recovery handling must be integrated for a complete OTA solution.
 
-The intended mount layout for each selected slot is:
+The initramfs maps the active root slot through dm-crypt as `/dev/mapper/root`, then through dm-verity as `/dev/mapper/verity-root`, mounted read-only at `/`.
+
+The inactive root slot is mapped through dm-crypt as `/dev/mapper/update`. With slot A active, this is `root_b`. With slot B active, it is `root_a`. The mapping is writable but stays unmounted.
+
+Write the new root filesystem image with its AVB metadata, hash tree and FEC data to `/dev/mapper/update` so dm-crypt encrypts it on disk. Update the inactive boot files through `/var/boot-update`.
+
+The device mappings and mount points for each selected slot are:
 
 | Volume | Slot A active | Slot B active |
 | --- | --- | --- |
 | `boot_a` | `/boot` | `/var/boot-update` |
 | `boot_b` | `/var/boot-update` | `/boot` |
-| `root_a` | `/` through dm-crypt and dm-verity | Not mounted |
-| `root_b` | Not mounted | `/` through dm-crypt and dm-verity |
+| `root_a` | `/dev/mapper/verity-root`, mounted at `/` | `/dev/mapper/update`, not mounted |
+| `root_b` | `/dev/mapper/update`, not mounted | `/dev/mapper/verity-root`, mounted at `/` |
 
 ### Boot firmware redundancy
 
