@@ -10,6 +10,7 @@ pipeline {
     }
 
     parameters {
+        gitParameter branchFilter: 'origin/(.*)', defaultValue: 'wrynose', selectedValue: 'DEFAULT', name: 'BRANCH', type: 'PT_BRANCH', description: 'branch to build'
         choice choices: ['imx95-15x15-lpddr4x-frdm', 'imx93-11x11-lpddr4x-frdm', 'imx91-11x11-lpddr4-frdm'], description: 'select machine', name: 'MACHINE'
         choice choices: ['dev', 'prod'], description: 'select security profile', name: 'SECURITY_PROFILE'
         choice choices: ['no', 'yes'], description: 'clean workspace before building', name: 'CLEAN'
