@@ -145,13 +145,12 @@ Optional PQC signing covers the configured AHAB containers. Linux FIT signing re
 
 The bundled initramfs:
 
-1. Mounts `secdata` and loads or creates storage keys.
+1. Loads or creates storage encryption keys.
 2. Opens the root volume through dm-crypt.
 3. On first boot, copies the plaintext root image from slot B into encrypted slot A.
 4. Verifies AVB metadata and sets up dm-verity.
 5. Mounts the verified read-only root filesystem and encrypted writable data filesystem.
-6. Enables EVM signature checks and locks its settings.
-7. Switches to the real root filesystem and starts systemd.
+6. Switches to the real root filesystem and starts systemd.
 
 The OP-TEE trusted master key protects the kernel encrypted storage key. AVB authenticates root filesystem metadata. dm-verity checks blocks as they are read and uses FEC data from meta-avb to recover from limited corruption. IMA/EVM enforce the configured file and metadata integrity policies.
 
@@ -277,6 +276,7 @@ Artifacts are written to `build/tmp/deploy/images/<MACHINE>/`:
 | `imx-secure-image-<MACHINE>.rootfs.wic.gz` | Complete disk image |
 | `imx-secure-image-<MACHINE>.rootfs.wic.bmap` | Block map for flashing |
 | `imx-secure-image-<MACHINE>.rootfs.erofs.avbverity.gz` | Root filesystem with AVB metadata and verity data |
+| `imx-secure-image-<MACHINE>.rootfs.sbom-cve-check.spdx.json` | SPDX SBOM with CVE scan results, production builds only |
 | `fitImage` | Signed FIT containing Linux, the bundled initramfs and device trees |
 | `imx-boot*.sign` | Signed boot containers |
 | `imx-boot*.sign.fuses/` | SPSDK SRK hashes and fuse scripts |
