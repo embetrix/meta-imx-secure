@@ -5,18 +5,25 @@
 
 / {
 	config {
-#if defined(CONFIG_AHAB_BOOT) && defined(CONFIG_ENV_IMPORT_FDT)
-		/* Apply the FIT overrides to compiled defaults on every boot */
+#if defined(CONFIG_ENV_IMPORT_FDT) && (defined(CONFIG_AHAB_BOOT) || defined(CONFIG_SILENT_CONSOLE_UNTIL_ENV))
+		/* Apply control DT settings to compiled defaults on every boot */
 		load-environment = <0>;
-
+#endif
+#if !defined(CONFIG_AHAB_BOOT) || !defined(CONFIG_ENV_IMPORT_FDT)
+		/* Use the compiled boot command */
+		bootcmd = CONFIG_BOOTCOMMAND;
+#endif
+#ifdef CONFIG_ENV_IMPORT_FDT
 		environment {
+#ifdef CONFIG_AHAB_BOOT
 			cntr_file = "fitImage";
 			auth_os = "bootm ${cntr_addr}; reset";
 			loadbootscript = "false";
+#endif
+#ifdef CONFIG_SILENT_CONSOLE_UNTIL_ENV
+			silent = "1";
+#endif
 		};
-#else
-		/* Use the compiled boot command */
-		bootcmd = CONFIG_BOOTCOMMAND;
 #endif
 	};
 };
