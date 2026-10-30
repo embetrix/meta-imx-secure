@@ -264,7 +264,7 @@ The [kas configuration](kas-imx-secure.yml) provides the complete layer set. To 
 
 For a product image, start from [imx-secure-image.bb](recipes-core/images/imx-secure-image.bb) and retain its read-only root filesystem and security package setup. Machine and storage defaults are in [imx-secure.inc](conf/machine/include/imx-secure.inc).
 
-A [Docker build environment](Dockerfile) and [Jenkins pipeline](Jenkinsfile) are included for automated builds.
+A [Docker](Dockerfile) build environment and [Jenkins](Jenkinsfile) pipeline are included for automated builds.
 
 ### Build artifacts
 
