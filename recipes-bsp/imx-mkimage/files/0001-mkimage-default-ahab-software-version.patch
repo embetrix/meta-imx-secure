@@ -1,0 +1,65 @@
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Subject: [PATCH] mkimage: allow a default AHAB container software version
+
+Many boot targets omit -sw_version for the ROM-loaded OEM container or
+when OP-TEE is absent. Read IMX_MKIMAGE_SW_VERSION as the default in the
+shared AHAB tool so all those paths can use the same software version.
+Keep explicit command line versions and appended containers unchanged.
+Reject invalid defaults instead of silently truncating the version.
+
+Upstream-Status: Pending
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+diff --git a/README b/README
+--- a/README
++++ b/README
+@@ -40,6 +40,10 @@
+ 
+ 	-sw_version [value]
+ 		Specifies SW version field for the new container.
++		Defaults to IMX_MKIMAGE_SW_VERSION from the environment, or zero
++		when unset. Accepts values from 0 to 65535 in decimal or hex.
++		An explicit -sw_version overrides this default.
++		Containers supplied with -append are not modified.
+ 
+ 	-dcd [filename]
+ 		Specifies the DCD image to be appended to the new container.
+diff --git a/src/mkimage_imx8.c b/src/mkimage_imx8.c
+--- a/src/mkimage_imx8.c
++++ b/src/mkimage_imx8.c
+@@ -574,6 +574,26 @@
+ 	close(input_fd);
+ 
+ 	return 0;
++}
++
++static uint16_t get_default_sw_version(void)
++{
++	const char *value = getenv("IMX_MKIMAGE_SW_VERSION");
++	char *end;
++	unsigned long version;
++
++	if (!value)
++		return 0;
++
++	errno = 0;
++	version = strtoul(value, &end, 0);
++	if (value[0] < '0' || value[0] > '9' || *end || errno ||
++	    version > UINT16_MAX) {
++		fprintf(stderr, "IMX_MKIMAGE_SW_VERSION must be between 0 and 65535\n");
++		exit(EXIT_FAILURE);
++	}
++
++	return (uint16_t)version;
+ }
+ 
+ /*
+@@ -607,7 +627,7 @@
+ 	rev_type_t rev = NO_REV; /* Initially No REV defined */
+ 
+ 	uint8_t  fuse_version = 0;
+-	uint16_t sw_version   = 0;
++	uint16_t sw_version   = get_default_sw_version();
+ 	uint8_t  cntr_version = 0;
+ 	uint32_t cntr_flags   = CONTAINER_FLAGS_DEFAULT;
+ 
