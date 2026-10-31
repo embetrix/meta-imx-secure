@@ -1,0 +1,27 @@
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Subject: [PATCH] arm64: dts: imx95: add system manager reset
+
+Add the node used by the imx-sm-reset driver. This lets Linux request a
+full board reset through PSCI RESET2 with the board_reset argument.
+ROM can then select the boot image set again after a firmware update.
+
+Upstream-Status: Pending
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+ arch/arm64/boot/dts/freescale/imx95.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx95.dtsi b/arch/arm64/boot/dts/freescale/imx95.dtsi
+--- a/arch/arm64/boot/dts/freescale/imx95.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx95.dtsi
+@@ -47,6 +47,10 @@
+ 		serial7 = &lpuart8;
+ 	};
+ 
++	reset_ctrl {
++		compatible = "nxp,imx95-resetctrl";
++	};
++
+ 	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
