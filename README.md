@@ -110,7 +110,7 @@ ssh -i ~/.ssh/id_ed25519 root@<device-ip>
 
 This issues a client SSH certificate valid for one hour. Keep validity as short as your work allows.
 
-The SSH service waits for time synchronization. Ensure the device can reach its time servers so certificate validity checks use the correct time.
+In production images, the SSH service waits for time synchronization. Ensure the device can reach its time servers so certificate validity checks use the correct time.
 
 ## Security architecture
 

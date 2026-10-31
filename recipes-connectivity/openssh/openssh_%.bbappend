@@ -7,10 +7,10 @@ OPENSSH_CA_PUBKEY ??= ""
 OPENSSH_HOST_KEY_DIR = "${sysconfdir}/ssh/keys"
 OPENSSH_HOST_KEY_DIR_READONLY_CONFIG = "${sysconfdir}/ssh/keys"
 
-SRC_URI += "file://sshd-time-sync.conf"
+SRC_URI += "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://sshd-time-sync.conf', '', d)}"
 
-PACKAGECONFIG:remove = "systemd-sshd-socket-mode"
-PACKAGECONFIG:append = " systemd-sshd-service-mode"
+PACKAGECONFIG:remove = "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'systemd-sshd-socket-mode', '', d)}"
+PACKAGECONFIG:append = "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', ' systemd-sshd-service-mode', '', d)}"
 
 # Rebuild when the production CA public key changes
 do_install[file-checksums] += "${@'${OPENSSH_CA_PUBKEY}:True' if d.getVar('IMX_SECURITY_PROFILE') == 'prod' and d.getVar('OPENSSH_CA_PUBKEY') else ''}"
@@ -41,11 +41,11 @@ do_install:append () {
 			bbfatal "Production build requires OPENSSH_CA_PUBKEY to be set to a valid SSH CA public key"
 		fi
 		install -m 0644 "${OPENSSH_CA_PUBKEY}" ${D}${sysconfdir}/ssh/certs/ssh_ca.pub
-	fi
 
-	# Drop-in: start sshd after NTP sync (certificate validity needs correct time)
-	install -d ${D}${systemd_system_unitdir}/sshd.service.d
-	install -m 0644 ${UNPACKDIR}/sshd-time-sync.conf ${D}${systemd_system_unitdir}/sshd.service.d/time-sync.conf
+		# Wait for time sync before checking certificate validity
+		install -d ${D}${systemd_system_unitdir}/sshd.service.d
+		install -m 0644 ${UNPACKDIR}/sshd-time-sync.conf ${D}${systemd_system_unitdir}/sshd.service.d/time-sync.conf
+	fi
 }
 
 FILES:${PN}-sshd += " \
