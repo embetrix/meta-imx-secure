@@ -10,13 +10,15 @@ SRC_URI += " \
     file://journal-flush-override.conf \
     file://80-wlan.network \
     file://rfkill-override.conf \
-    ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://security-harden.conf', '', d)} \
+    ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://security-harden.conf file://system-hardening.conf', '', d)} \
 "
 
 do_install:append() {
 	if [ "${IMX_SECURITY_PROFILE}" = "prod" ]; then
 		install -d ${D}${sysconfdir}/sysctl.d
 		install -m 644 ${UNPACKDIR}/security-harden.conf ${D}${sysconfdir}/sysctl.d/90-security-harden.conf
+		install -D -m 0644 ${UNPACKDIR}/system-hardening.conf \
+			${D}${systemd_unitdir}/system.conf.d/60-imx-secure.conf
 	fi
 
 	for config in timesyncd journal-upload; do

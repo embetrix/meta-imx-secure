@@ -24,14 +24,5 @@ do_install:append() {
         # Disable serial login
         install -d ${D}${sysconfdir}/systemd/system
         ln -sf /dev/null ${D}${sysconfdir}/systemd/system/serial-getty@.service
-
-        # Harden systemd defaults to disable coredumps
-        sed -i '/#DumpCore=/c\\DumpCore=no'                ${D}${sysconfdir}/systemd/system.conf
-        sed -i '/#DefaultLimitCORE=/c\\DefaultLimitCORE=0' ${D}${sysconfdir}/systemd/system.conf
     fi
-
-    # Limit journald size
-    sed -i '/#SystemMaxUse=/c\\SystemMaxUse=256M'          ${D}${sysconfdir}/systemd/journald.conf
-    sed -i '/#SystemMaxFileSize=/c\\SystemMaxFileSize=32M' ${D}${sysconfdir}/systemd/journald.conf
-    sed -i '/#RuntimeMaxUse=/c\\RuntimeMaxUse=64M'         ${D}${sysconfdir}/systemd/journald.conf
 }
