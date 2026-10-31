@@ -1,0 +1,254 @@
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Subject: [PATCH] imx: select the mmc boot partition from the image set
+
+Keep the MMC boot partition in sync with the selected boot image set.
+After board setup, set mmcpart to the configured slot A partition for
+image set 0 or slot B partition for image set 1. Default to partitions
+1 and 3 with both numbers configurable through Kconfig.
+
+Append boot_slot=a or boot_slot=b to /chosen/bootargs during the final
+device-tree fixup. Leave root= unchanged so initramfs can select rootfs.
+
+Read the image set through SCMI on i.MX9 or SCFW on i.MX8QM/QXP/DXL.
+On i.MX91/93/8ULP, use the ROM-reported image offset instead.
+Skip non-MMC boots and recovery boots reported by SCMI or the ROM API.
+Stop boot if the image set cannot be determined, including QXP revision
+B and ROM API boots from eMMC hardware boot partitions.
+
+Upstream-Status: Inappropriate [A/B partition boot selection]
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -296,6 +296,35 @@
+ config IMX8_ROMAPI
+ 	def_bool y
+ 	depends on IMX8MN || IMX8MP || IMX8ULP || IMX91 || IMX93
++
++config IMX_MMC_BOOT_PARTITION
++	bool "Select the MMC boot partition from the image set"
++	depends on MMC
++	depends on ARCH_IMX8 || ARCH_IMX8ULP || ARCH_IMX9
++	select EVENT
++	select OFNODE_MULTI_TREE
++	help
++	  Set mmcpart from the selected image set after board setup.
++	  Pass boot_slot=a or boot_slot=b on the kernel command line.
++	  Leave root= unchanged for initramfs to select the root filesystem.
++	  ROM API platforms support SD and eMMC user-area boot only.
++	  The SCFW query is unavailable on i.MX8QXP revision B.
++
++config IMX_MMC_BOOT_PART_A
++	int "Boot partition for image set 0"
++	depends on IMX_MMC_BOOT_PARTITION
++	range 1 2147483647
++	default 1
++	help
++	  MMC partition number for boot slot A
++
++config IMX_MMC_BOOT_PART_B
++	int "Boot partition for image set 1"
++	depends on IMX_MMC_BOOT_PARTITION
++	range 1 2147483647
++	default 3
++	help
++	  MMC partition number for boot slot B
+ 
+ config SPL_IMX_ROMAPI_LOADADDR
+ 	hex "Default load address to load image through ROM API"
+diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
+--- a/arch/arm/mach-imx/Makefile
++++ b/arch/arm/mach-imx/Makefile
+@@ -84,6 +84,7 @@
+ endif
+ ifneq ($(CONFIG_XPL_BUILD),y)
+ obj-$(CONFIG_CMD_BMODE) += cmd_bmode.o
++obj-$(CONFIG_IMX_MMC_BOOT_PARTITION) += mmc-boot-partition.o
+ obj-$(CONFIG_CMD_HDMIDETECT) += cmd_hdmidet.o
+ obj-$(CONFIG_CMD_DEKBLOB) += cmd_dek.o
+ obj-$(CONFIG_CMD_NANDBCB) += cmd_nandbcb.o
+diff --git a/arch/arm/mach-imx/mmc-boot-partition.c b/arch/arm/mach-imx/mmc-boot-partition.c
+new file mode 100644
+--- /dev/null
++++ b/arch/arm/mach-imx/mmc-boot-partition.c
+@@ -0,0 +1,179 @@
++// SPDX-License-Identifier: GPL-2.0+
++/* (C) Copyright 2026 Embetrix Embedded Systems Solutions, ayoub.zaki@embetrix.com */
++
++#include <env.h>
++#include <event.h>
++#include <malloc.h>
++#include <mmc.h>
++#include <stdio.h>
++#include <dm/ofnode.h>
++#include <asm/arch/sys_proto.h>
++#include <asm/mach-imx/boot_mode.h>
++#include <linux/errno.h>
++
++#if IS_ENABLED(CONFIG_ARCH_IMX8)
++#include <firmware/imx/sci/sci.h>
++#endif
++
++#define BOOT_SET_A_OFFSET 0x8000
++#define BOOT_PARTITION_SKIP 1
++
++static char boot_slot;
++
++/* BOOT_PARTITION_SKIP leaves non-MMC and recovery boots unchanged */
++static int imx_get_boot_image_set(unsigned int *image_set)
++{
++#if IS_ENABLED(CONFIG_ARCH_IMX9) && IS_ENABLED(CONFIG_SCMI_FIRMWARE)
++	rom_passover_t rom_data = {0};
++	int ret;
++
++	ret = scmi_get_rom_data(&rom_data);
++	if (ret)
++		return ret;
++
++	if (rom_data.boot_stage == BT_STAGE_USB ||
++	    rom_data.boot_stage == BT_STAGE_RECOVERY)
++		return BOOT_PARTITION_SKIP;
++	if (rom_data.boot_stage != BT_STAGE_PRIMARY &&
++	    rom_data.boot_stage != BT_STAGE_SECONDARY)
++		return -EINVAL;
++
++	if (rom_data.boot_dev_type != BT_DEV_TYPE_SD &&
++	    rom_data.boot_dev_type != BT_DEV_TYPE_MMC)
++		return BOOT_PARTITION_SKIP;
++
++	*image_set = rom_data.img_set_sel;
++#elif IS_ENABLED(CONFIG_ARCH_IMX8)
++	sc_rsrc_t dev = SC_R_LAST;
++	u8 container;
++	int ret;
++
++	sc_misc_get_boot_dev(-1, &dev);
++	switch (dev) {
++	case SC_R_SDHC_0:
++	case SC_R_SDHC_1:
++	case SC_R_SDHC_2:
++		break;
++	case SC_R_LAST:
++		return -EIO;
++	default:
++		return BOOT_PARTITION_SKIP;
++	}
++
++	/* The BSP cannot query the selected set on QXP revision B */
++	if (is_imx8qxp() && is_soc_rev(CHIP_REV_B))
++		return -EOPNOTSUPP;
++
++	ret = sc_misc_get_boot_container(-1, &container);
++	if (ret)
++		return ret;
++	if (container != 1 && container != 2)
++		return -EINVAL;
++
++	*image_set = container - 1;
++#elif IS_ENABLED(CONFIG_IMX8_ROMAPI)
++	struct mmc *mmc;
++	u32 boot, stage, offset;
++	unsigned int boot_part;
++	int ret;
++
++	if (rom_api_query_boot_infor(QUERY_BT_DEV, &boot) != ROM_API_OKAY)
++		return -EIO;
++	if ((boot >> 16) != BT_DEV_TYPE_SD &&
++	    (boot >> 16) != BT_DEV_TYPE_MMC)
++		return BOOT_PARTITION_SKIP;
++
++	if (rom_api_query_boot_infor(QUERY_BT_STAGE, &stage) != ROM_API_OKAY)
++		return -EIO;
++	if (stage == BT_STAGE_USB || stage == BT_STAGE_RECOVERY)
++		return BOOT_PARTITION_SKIP;
++	if (stage != BT_STAGE_PRIMARY && stage != BT_STAGE_SECONDARY)
++		return -EINVAL;
++
++	if ((boot >> 16) == BT_DEV_TYPE_MMC) {
++		/* Offsets alone cannot identify the eMMC hardware boot partition */
++		if (boot & 1)
++			return -EOPNOTSUPP;
++		mmc = find_mmc_device(mmc_get_env_dev());
++		if (!mmc)
++			return -ENXIO;
++		ret = mmc_init(mmc);
++		if (ret)
++			return ret;
++		boot_part = EXT_CSD_EXTRACT_BOOT_PART(mmc->part_config);
++		if (boot_part == EMMC_BOOT_PART_BOOT1 ||
++		    boot_part == EMMC_BOOT_PART_BOOT2)
++			return -EOPNOTSUPP;
++	}
++
++	if (rom_api_query_boot_infor(QUERY_IMG_OFF, &offset) != ROM_API_OKAY)
++		return -EIO;
++	if (offset < BOOT_SET_A_OFFSET)
++		return -EINVAL;
++
++	/* ROM reports the selected offset, including a fuse-configured set B */
++	*image_set = offset != BOOT_SET_A_OFFSET;
++#else
++	return -EOPNOTSUPP;
++#endif
++
++	return *image_set > 1 ? -EINVAL : 0;
++}
++
++static int select_boot_partition(void)
++{
++	unsigned int image_set, part;
++	int ret;
++
++	ret = imx_get_boot_image_set(&image_set);
++	if (ret == BOOT_PARTITION_SKIP)
++		return 0;
++	if (ret) {
++		printf("Cannot select boot partition: image set unavailable (%d)\n", ret);
++		return ret;
++	}
++
++	part = image_set ? CONFIG_IMX_MMC_BOOT_PART_B : CONFIG_IMX_MMC_BOOT_PART_A;
++	ret = env_set_ulong("mmcpart", part);
++	if (ret)
++		return ret;
++
++	boot_slot = image_set ? 'b' : 'a';
++
++	printf("Boot partition: %s (partition %u, image set %u)\n",
++	       image_set ? "boot_b" : "boot_a", part, image_set);
++
++	return 0;
++}
++EVENT_SPY_SIMPLE(EVT_LAST_STAGE_INIT, select_boot_partition);
++
++/* Add the slot after board boot scripts have set the kernel arguments */
++static int boot_slot_fixup(void *ctx, struct event *event)
++{
++	ofnode chosen;
++	const char *args;
++	char *cmdline;
++	int ret;
++
++	if (!boot_slot)
++		return 0;
++
++	chosen = oftree_path(event->data.ft_fixup.tree, "/chosen");
++	if (!ofnode_valid(chosen))
++		return -ENOENT;
++
++	args = ofnode_read_string(chosen, "bootargs");
++	if (!args)
++		args = "";
++	cmdline = malloc(strlen(args) + sizeof(" boot_slot=a"));
++	if (!cmdline)
++		return -ENOMEM;
++
++	sprintf(cmdline, "%s%sboot_slot=%c", args, *args ? " " : "", boot_slot);
++	ret = ofnode_write_prop(chosen, "bootargs", cmdline,
++				strlen(cmdline) + 1, true);
++	free(cmdline);
++
++	return ret;
++}
++EVENT_SPY_FULL(EVT_FT_FIXUP, boot_slot_fixup);
