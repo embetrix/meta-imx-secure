@@ -265,6 +265,8 @@ require conf/distro/include/imx-secure-distro.inc
 
 Use [imx-secure-image.bb](recipes-core/images/imx-secure-image.bb) as the image base, keeping its read-only root filesystem and security packages. Machine and storage defaults are in [imx-secure.inc](conf/machine/include/imx-secure.inc).
 
+[packagegroup-imx-secure.bb](recipes-core/packagegroup/packagegroup-imx-secure.bb) selects OP-TEE, SMW and ELE runtime support.
+
 A [Docker](Dockerfile) build environment and [Jenkins](Jenkinsfile) pipeline are included for automated builds.
 
 ### Build artifacts
@@ -290,12 +292,10 @@ BSP layers are pinned to NXP `LF6.18.37_2.1.0`. Other repos follow Wrynose. See 
 | Repository | Branch | Layers |
 | --- | --- | --- |
 | [openembedded-core](https://github.com/openembedded/openembedded-core/tree/wrynose) | `wrynose` | meta |
-| [meta-yocto](https://git.yoctoproject.org/meta-yocto/tree/?h=wrynose) | `wrynose` | meta-poky (required by meta-imx-sdk) |
 | [meta-openembedded](https://github.com/openembedded/meta-openembedded/tree/wrynose) | `wrynose` | meta-oe, meta-python, meta-perl, meta-networking and meta-multimedia |
 | [meta-arm](https://git.yoctoproject.org/meta-arm/tree/?h=wrynose) | `wrynose` | meta-arm and meta-arm-toolchain |
 | [meta-freescale](https://github.com/Freescale/meta-freescale/tree/wrynose) | `wrynose` | meta-freescale |
-| [meta-freescale-distro](https://github.com/Freescale/meta-freescale-distro/tree/wrynose) | `wrynose` | meta-freescale-distro |
-| [meta-imx](https://github.com/nxp-imx/meta-imx/tree/wrynose-6.18.37-2.1.0) | `wrynose-6.18.37-2.1.0` | meta-imx-bsp and meta-imx-sdk |
+| [meta-imx](https://github.com/nxp-imx/meta-imx/tree/wrynose-6.18.37-2.1.0) | `wrynose-6.18.37-2.1.0` | meta-imx-bsp |
 | [meta-avb](https://github.com/embetrix/meta-avb/tree/wrynose) | `wrynose` | meta-avb |
 | [meta-security](https://git.yoctoproject.org/meta-security/tree/?h=wrynose) | `wrynose` | meta-security and meta-integrity |
 

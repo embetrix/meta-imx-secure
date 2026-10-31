@@ -49,25 +49,11 @@ repos:
       meta-arm:
       meta-arm-toolchain:
 
-  meta-yocto:
-    # Required by meta-imx-sdk through meta-freescale-distro
-    url: https://git.yoctoproject.org/meta-yocto
-    branch: wrynose
-    path: layers/meta-yocto
-    layers:
-      meta-poky:
-
   meta-freescale:
     url: https://github.com/Freescale/meta-freescale.git
     branch: wrynose
     commit: ca31f33c5b5e433939c5f8442d2de56925d638bd
     path: layers/meta-freescale
-
-  meta-freescale-distro:
-    url: https://github.com/Freescale/meta-freescale-distro.git
-    branch: wrynose
-    commit: 4464f38b4aa618b5942f5e35dd25cff590f410a6
-    path: layers/meta-freescale-distro
 
   meta-imx:
     url: https://github.com/nxp-imx/meta-imx.git
@@ -76,7 +62,6 @@ repos:
     path: layers/meta-imx
     layers:
       meta-imx-bsp:
-      meta-imx-sdk:
 
   meta-avb:
     url: "https://github.com/embetrix/meta-avb.git"
