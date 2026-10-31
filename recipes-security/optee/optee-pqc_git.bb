@@ -12,7 +12,7 @@ LIC_FILES_CHKSUM = " \
 
 # The source commit also pins the leancrypto submodule
 SRC_URI = "gitsm://github.com/embetrix/optee-pqc.git;protocol=https;branch=main"
-SRCREV = "783ba562dcb07b5c52014c02560bd5fca50181e8"
+SRCREV = "3907f51f23ca26add247aadba553b3db9eb79819"
 PV = "0.1+git"
 
 inherit cmake python3native features_check
