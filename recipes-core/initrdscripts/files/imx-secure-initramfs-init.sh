@@ -42,7 +42,8 @@ OPT_PART="noexec,nodev,nosuid,nosymfollow,iversion"
 
 KMK_BLOB="$SECDATA_MNT/keys/kmk.blob"
 ENC_KEY_BLOB="$SECDATA_MNT/keys/enc-key.blob"
-KEY_SZ=32
+# AES-256-XTS uses two 256-bit keys
+KEY_SZ=64
 
 HW_SERIAL="/sys/devices/soc0/serial_number"
 
