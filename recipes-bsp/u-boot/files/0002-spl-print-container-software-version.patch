@@ -1,0 +1,26 @@
+From: Ayoub Zaki <ayoub.zaki@embetrix.com>
+Subject: [PATCH] spl: print the loaded i.MX container software version
+
+Print the version from the container header after its images load
+successfully. Use the authenticated header when AHAB is enabled.
+Normal console handling keeps the message silent in the prod profile.
+
+Upstream-Status: Inappropriate [boot diagnostics]
+Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
+---
+ common/spl/spl_imx_container.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/common/spl/spl_imx_container.c b/common/spl/spl_imx_container.c
+--- a/common/spl/spl_imx_container.c
++++ b/common/spl/spl_imx_container.c
+@@ -213,6 +213,9 @@ static int read_auth_container(struct spl_image_info *spl_image,
+ 		}
+ 	}
+ 
++	printf("Boot container software version: %u\n",
++	       (unsigned int)authhdr->sw_version);
++
+ #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_IMX_TRUSTY_OS)
+ 	/* Everything checks out, get the sw_version now. */
+ 	spl_image->rbindex = (uint64_t)container->sw_version;

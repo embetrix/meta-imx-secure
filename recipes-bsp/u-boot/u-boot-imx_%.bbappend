@@ -13,7 +13,8 @@ SRC_URI:append = " file://fit.cfg \
                    file://env-fdt.cfg \
                    file://${IMX_FIT_BOOT_CONFIG} \
                    file://fit-boot.dtsi;subdir=${BP}/include \
-                   ${@bb.utils.contains('UBOOT_SIGN_ENABLE', '1', 'file://0001-bootm-always-verify-signed-fit.patch', '', d)}"
+                   ${@bb.utils.contains('UBOOT_SIGN_ENABLE', '1', 'file://0001-bootm-always-verify-signed-fit.patch', '', d)} \
+                   file://0002-spl-print-container-software-version.patch"
 
 # Provide a fresh KASLR seed from ELE on i.MX9
 SRC_URI:append:mx9-generic-bsp = " file://rng-ele.cfg \
