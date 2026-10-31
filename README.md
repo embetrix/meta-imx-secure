@@ -99,7 +99,7 @@ For a development image:
 ssh root@<device-ip>
 ```
 
-For a production image, first sign your public key with the SSH CA generated in step 2:
+For a production image, first sign your public key with the SSH CA key generated in step 2:
 
 ```sh
 ssh-keygen -s imx-secure-keys/ssh-ca/ssh-ca-ed25519.key \
@@ -170,7 +170,7 @@ The [WIC layout](files/wic/imx-boot-secure-bootpart.wks.in) writes `imx-boot` be
 
 Set partition sizes with the BitBake variables `BOOT_PART_SZ`, `ROOT_PART_SZ`, `SECDATA_PART_SZ` and `DATA_PART_SZ` in `local.conf`.
 
-Mount points above show slot A active. See [OTA integration](#ota-integration) for redundant boot images and A/B slot handling.
+Mount points above show slot A active. See [OTA update integration](#ota-update-integration) for redundant boot images and A/B slot handling.
 
 `secdata` is a plain ext4 filesystem. It holds protected key blobs in `keys/`, OP-TEE storage in `tee/`, the SMW database in `smw/` and ELE persistent storage in `ele/`.
 
@@ -232,28 +232,30 @@ See the [NXP nxpele guide](https://spsdk.readthedocs.io/en/latest/apps/nxpele.ht
 
 ## OTA Update integration
 
-The A/B layout provides space for updates. An update agent, slot selection policy, boot-success confirmation and recovery handling must be integrated for a complete OTA solution.
+The layer provides A/B boot and root filesystem slots selection. On supported i.MX8/9 MMC boots, U-Boot selects the FIT partition to match the boot firmware image set:
 
-The initramfs maps the active root slot through dm-crypt as `/dev/mapper/root`, then through dm-verity as `/dev/mapper/verity-root`, mounted read-only at `/`.
+| Boot image set | Slot | FIT partition | Root partition |
+| --- | --- | --- | --- |
+| 0 | A | `boot_a` | `root_a` |
+| 1 | B | `boot_b` | `root_b` |
 
-The inactive root slot is mapped through dm-crypt as `/dev/mapper/update`. With slot A active, this is `root_b`. With slot B active, it is `root_a`. The mapping is writable but stays unmounted.
+U-Boot passes `boot_slot=a` or `boot_slot=b` on the kernel command line. The initramfs uses `root=` to identify the disk and selects the matching root partition. Without `boot_slot=` it keeps the slot identified by `root=`.
 
-Write the new root filesystem image with its AVB metadata, hash tree and FEC data to `/dev/mapper/update` so dm-crypt encrypts it on disk. Update the inactive boot files through `/var/boot-update`.
+An update agent installs the new FIT in `/var/boot-update` and writes the root filesystem image with its AVB metadata and verity data to `/dev/mapper/update`. Both targets belong to the inactive slot. Writes to the inactive rootfs slot are encrypted by dm-crypt.
 
-The device mappings and mount points for each selected slot are:
+The update agent must manage update verification, slot activation, boot-success confirmation and rollback. The layer provides the boot flow and storage mappings but does not include a complete OTA agent.
 
-| Volume | Slot A active | Slot B active |
-| --- | --- | --- |
-| `boot_a` | `/boot` | `/var/boot-update` |
-| `boot_b` | `/var/boot-update` | `/boot` |
-| `root_a` | `/dev/mapper/verity-root`, mounted at `/` | `/dev/mapper/update`, not mounted |
-| `root_b` | `/dev/mapper/update`, not mounted | `/dev/mapper/verity-root`, mounted at `/` |
+### Boot firmware selection
 
-### Boot firmware redundancy
+i.MX ROM selects between redundant boot firmware image sets using container software versions and boot settings. With version-based selection enabled it tries the image set with the higher software version first. Set `SW_VERSION` when building `imx-boot` to assign this version.
 
-i.MX ROM supports redundant boot image sets. For SD and eMMC user-area boot, `Secondary_boot_offset = 0` selects 4 MiB from the start of the device for the second set. ROM selects the boot order using container versions and boot selection settings, then can try the other set if boot fails. The offset can be changed through fuses. See the [i.MX95 reference manual, sections 5.2 and 13.12.2](https://www.nxp.com/docs/en/reference-manual/IMX95RM.pdf#page=154) and [i.MX91 reference manual, section 9.6.3](https://www.nxp.com/docs/en/reference-manual/IMX91RM.pdf#page=248).
+Keep each firmware copy aligned with its matching FIT and root filesystem slot. The WIC image writes only the first firmware copy, so the update or provisioning process must populate the second copy. See [Partitions layout](#partitions-layout) for the default locations.
 
-eMMC hardware boot partitions use a different layout: each boot partition holds one image set. The 4 MiB offset above applies to the disk user area. The current WIC layout writes only the first copy, so the redundant location must be populated separately.
+On i.MX95, request a full board reset after a boot firmware update so ROM selects the image set again:
+
+```sh
+systemctl reboot --reboot-argument=board_reset
+```
 
 ## Build integration
 
