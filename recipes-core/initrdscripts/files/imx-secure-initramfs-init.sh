@@ -54,13 +54,13 @@ WATCHDOG_PID=""
 # Partition numbers for A/B slots and data
 # following imx-boot-secure-bootpart.wks.in
 BOOT_SLOT_A=1
-BOOT_SLOT_B=3
 ROOT_SLOT_A=2
+BOOT_SLOT_B=3
 ROOT_SLOT_B=4
 SECDATA_PART=5
 DATA_PART=6
 
-TIMEOUT=40
+TIMEOUT=10
 
 AVB_PUBKEY="/etc/avb/avb_pubkey.bin"
 
