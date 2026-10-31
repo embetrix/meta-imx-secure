@@ -1,0 +1,17 @@
+# Basic audit rules  adapt these to your needs
+
+## Account and SSH configuration changes
+-a always,exit -F arch=b64 -F path=/etc/passwd -F perm=wa -k identity
+-a always,exit -F arch=b64 -F path=/etc/shadow -F perm=wa -k identity
+-a always,exit -F arch=b64 -F path=/etc/group -F perm=wa -k identity
+-a always,exit -F arch=b64 -F path=/etc/ssh/sshd_config -F perm=wa -k sshd
+-a always,exit -F arch=b64 -F path=/etc/ssh/sshd_config_readonly -F perm=wa -k sshd
+
+## Security policy and service configuration changes
+-a always,exit -F arch=b64 -F dir=/etc/audit/ -F perm=wa -k audit-config
+-a always,exit -F arch=b64 -F dir=/etc/nftables/ -F perm=wa -k firewall
+-a always,exit -F arch=b64 -F dir=/etc/usbguard/ -F perm=wa -k usbguard
+-a always,exit -F arch=b64 -F dir=/etc/systemd/system/ -F perm=wa -k systemd
+
+## Kernel module loading and removal
+-a always,exit -F arch=b64 -S init_module,finit_module,delete_module -k modules
