@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-name: Parse kas configuration
+name: BitBake parse
 
 on:
   push:
@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: kas-parse-${{ github.ref }}
+  group: bitbake-parse-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

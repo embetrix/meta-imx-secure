@@ -1,6 +1,6 @@
 # meta-imx-secure
 
-[![Parse configuration](https://github.com/embetrix/meta-imx-secure/actions/workflows/kas-parse.yml/badge.svg?branch=wrynose)](https://github.com/embetrix/meta-imx-secure/actions/workflows/kas-parse.yml?query=branch%3Awrynose)
+[![BitBake parse](https://github.com/embetrix/meta-imx-secure/actions/workflows/bitbake-parse.yml/badge.svg?branch=wrynose)](https://github.com/embetrix/meta-imx-secure/actions/workflows/bitbake-parse.yml?query=branch%3Awrynose)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](COPYING.MIT)
 
 A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and verified storage, integrity checks and kernel and userspace hardening.
