@@ -99,16 +99,20 @@ For a development image:
 ssh root@<device-ip>
 ```
 
-For a production image, sign an existing user public key with the SSH CA generated in step 2, then connect using the matching private key:
+For a production image, first sign your public key with the SSH CA generated in step 2:
 
 ```sh
 ssh-keygen -s imx-secure-keys/ssh-ca/ssh-ca-ed25519.key \
     -I developer -n root -V +1h ~/.ssh/id_ed25519.pub
-
-ssh -i ~/.ssh/id_ed25519 root@<device-ip>
 ```
 
 This issues a client SSH certificate valid for one hour. Keep validity as short as your work allows.
+
+Then connect using the matching private key:
+
+```sh
+ssh -i ~/.ssh/id_ed25519 root@<device-ip>
+```
 
 In production images, the SSH service waits for time synchronization. Ensure the device can reach its time servers so certificate validity checks use the correct time.
 
