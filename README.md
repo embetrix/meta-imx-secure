@@ -108,13 +108,13 @@ ssh-keygen -s imx-secure-keys/ssh-ca/ssh-ca-ed25519.key \
 ssh -i ~/.ssh/id_ed25519 root@<device-ip>
 ```
 
-This issues an SSH certificate valid for one hour. Keep validity as short as your work allows. The certificate expires, not the underlying key.
+This issues a client SSH certificate valid for one hour. Keep validity as short as your work allows.
 
 The SSH service waits for time synchronization. Ensure the device can reach its time servers so certificate validity checks use the correct time.
 
 ## Security architecture
 
-### Boot authentication
+### Secure Boot authentication workflow
 
 With boot signing enabled and AHAB provisioned for enforcement, the tested boards use this simplified flow:
 
@@ -168,9 +168,9 @@ Set partition sizes with the BitBake variables `BOOT_PART_SZ`, `ROOT_PART_SZ`, `
 
 Mount points above show slot A active. See [OTA integration](#ota-integration) for redundant boot images and A/B slot handling.
 
-`secdata` is a plain ext4 filesystem. It holds protected key blobs in `keys/`, OP-TEE storage in `tee/`, the SMW database in `smw/` and ELE persistent storage in `ele/`. These paths are under `/var/secdata`.
+`secdata` is a plain ext4 filesystem. It holds protected key blobs in `keys/`, OP-TEE storage in `tee/`, the SMW database in `smw/` and ELE persistent storage in `ele/`.
 
-## AHAB provisioning
+## AHAB Secure Boot provisioning
 
 The build preserves NXP firmware containers and signs OEM containers. It exports SRK hashes and fuse scripts beside the signed images.
 
