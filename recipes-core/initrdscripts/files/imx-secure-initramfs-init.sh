@@ -4,7 +4,7 @@
 
 # imx secure initramfs init script:
 #   mount_early_fs      - Mount devtmpfs, tmpfs, proc, sysfs, securityfs
-#   setup_block_devices - Find block devices from the kernel command line
+#   setup_slot_devices - Select slot devices from the kernel command line
 #   encrypt_rootfs      - First-boot rootfs encryption (plain to dm-crypt)
 #   setup_avb_verity    - AVB signature verification and dm-verity setup
 #   mount_dmcrypt_data  - First-boot data partitions encryption
@@ -77,7 +77,7 @@ LIBDIR="/usr/libexec/imx-secure"
 mount_early_fs
 silent_kernel_console
 klog "Starting Initramfs..."
-setup_block_devices
+setup_slot_devices
 
 klog "Root device: $ROOT_DEV"
 
