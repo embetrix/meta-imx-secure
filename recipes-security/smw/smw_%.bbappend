@@ -13,4 +13,7 @@ do_install:append() {
         > ${D}${nonarch_libdir}/tmpfiles.d/smw.conf
 }
 
-FILES:${PN} += "${nonarch_libdir}/tmpfiles.d/smw.conf"
+# Keep backend configs with the runtime library instead of the tests !
+FILES:${PN}-tests:remove = "${datadir}/${BPN}/*"
+FILES:${PN}-tests += "${datadir}/${BPN}/tests ${datadir}/${BPN}/pkcs11"
+FILES:${PN} += "${nonarch_libdir}/tmpfiles.d/smw.conf ${datadir}/${BPN}/config"
