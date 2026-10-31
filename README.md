@@ -3,7 +3,7 @@
 [![Parse configuration](https://github.com/embetrix/meta-imx-secure/actions/workflows/kas-parse.yml/badge.svg?branch=wrynose)](https://github.com/embetrix/meta-imx-secure/actions/workflows/kas-parse.yml?query=branch%3Awrynose)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](COPYING.MIT)
 
-A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and verified storage, IMA/EVM integrity checks and kernel and userspace hardening.
+A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and verified storage, integrity checks and kernel and userspace hardening.
 
 ## Features
 
@@ -12,7 +12,7 @@ A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and veri
 | Boot security | AHAB boot image signing with NXP SPSDK, signed Linux FIT images and optional AHAB PQC signing on supported silicon |
 | Storage | Encrypted read-only root filesystem, AVB metadata verification, dm-verity with forward error correction (FEC) and encrypted writable data |
 | Key protection | OP-TEE-backed kernel encrypted keys plus EdgeLock Enclave cryptography and persistent key storage |
-| Runtime protection | IMA/EVM integrity checks, signed kernel modules and kernel and userspace hardening |
+| Runtime protection | IMA/EVM integrity checks and kernel and userspace hardening |
 | Access control | nftables firewall, OpenSSH CA authentication, USBGuard and audit logging |
 | Cryptographic integration | OpenSSL integration through PKCS#11 using OP-TEE or NXP Security Middleware (SMW), OP-TEE PQC (experimental) |
 | Build and integration | Development and production profiles, A/B boot and root filesystem layout, CVE scanning and SPDX SBOM generation |
@@ -60,7 +60,7 @@ Keep private keys secure and maintain an offline backup. Run the helper again if
 | `dev` (default) | Bring-up and debugging | Serial access, debug tools and password-free root login |
 | `prod` | Product integration | Requires boot signing, applies kernel and userspace hardening, restricts the U-Boot console, disables the Linux serial console and serial getty and enables SSH CA authentication with password login disabled |
 
-Both profiles include storage encryption, root filesystem verification and IMA/EVM. Use development images only on an isolated test network.
+Both profiles include storage encryption, root filesystem verification and enforced runtime integrity checks. Use development images only on an isolated test network.
 
 ### 4. Build
 
@@ -112,8 +112,6 @@ This issues an SSH certificate valid for one hour. Keep validity as short as you
 
 The SSH service waits for time synchronization. Ensure the device can reach its time servers so certificate validity checks use the correct time.
 
-To enforce the hardware root of trust, complete [AHAB provisioning](#ahab-provisioning). A signed build alone does not enable enforced secure boot.
-
 ## Security architecture
 
 ### Boot authentication
@@ -140,18 +138,16 @@ Early firmware and container contents vary by SoC. See [NXP's i.MX9 provisioning
 
 Optional PQC signing covers the configured AHAB containers. Linux FIT signing remains separate.
 
-### Initramfs and storage protection
+### Initramfs workflow
 
 The bundled initramfs:
 
 1. Loads or creates storage encryption keys.
-2. Opens the root volume through dm-crypt.
-3. On first boot, copies the plaintext root image from slot B into encrypted slot A.
+2. Opens the active root partition with dm-crypt.
+3. If no filesystem is detected, copies the inactive root image through dm-crypt to encrypt it.
 4. Verifies AVB metadata and sets up dm-verity.
 5. Mounts the verified read-only root filesystem and encrypted writable data filesystem.
 6. Switches to the real root filesystem and starts systemd.
-
-The OP-TEE trusted master key protects the kernel encrypted storage key. AVB authenticates root filesystem metadata. dm-verity checks blocks as they are read and uses FEC data from meta-avb to recover from limited corruption. IMA/EVM enforce the configured file and metadata integrity policies.
 
 ### Partitions layout
 
@@ -166,9 +162,11 @@ The [WIC layout](files/wic/imx-boot-secure-bootpart.wks.in) writes `imx-boot` be
 | `boot_b` | 1544 MiB | 512 MiB | `/var/boot-update` | Inactive boot slot |
 | `root_b` | 2056 MiB | 1024 MiB | Not mounted | Plain root image for first-boot migration, then inactive root slot |
 | `secdata` | 3080 MiB | 512 MiB | `/var/secdata` | Key blobs, OP-TEE storage, SMW database and ELE storage |
-| `data` | 3592 MiB | 4096 MiB | `/var/data` | Encrypted writable state |
+| `data` | 3592 MiB | 4096 MiB | `/var/data` | Encrypted persistent storage for writable paths via volatile-binds |
 
-Partition offsets change if you change their sizes. Mount points above show slot A active. See [OTA integration](#ota-integration) for redundant boot images and A/B slot handling.
+Set partition sizes with the BitBake variables `BOOT_PART_SZ`, `ROOT_PART_SZ`, `SECDATA_PART_SZ` and `DATA_PART_SZ` in `local.conf`.
+
+Mount points above show slot A active. See [OTA integration](#ota-integration) for redundant boot images and A/B slot handling.
 
 `secdata` is a plain ext4 filesystem. It holds protected key blobs in `keys/`, OP-TEE storage in `tee/`, the SMW database in `smw/` and ELE persistent storage in `ele/`. These paths are under `/var/secdata`.
 
@@ -228,7 +226,7 @@ Compare the values with the script. Reboot the signed image and check `ahab_stat
 
 See the [NXP nxpele guide](https://spsdk.readthedocs.io/en/latest/apps/nxpele.html#batch) and [fuse usage guide, section 4.5](https://www.nxp.com/docs/en/application-note/AN14954.pdf#page=10).
 
-## OTA integration
+## OTA Update integration
 
 The A/B layout provides space for updates. An update agent, slot selection policy, boot-success confirmation and recovery handling must be integrated for a complete OTA solution.
 
