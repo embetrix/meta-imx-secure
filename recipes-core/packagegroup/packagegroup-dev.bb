@@ -14,7 +14,7 @@ PACKAGES = "${PN}"
 
 SUMMARY:packagegroup-dev = "Development support"
 
-RDEPENDS:packagegroup-dev = " \
+RDEPENDS:${PN} = " \
     packagegroup-core-full-cmdline \
     tcpdump \
     gdbserver \

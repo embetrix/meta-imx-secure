@@ -14,7 +14,7 @@ PACKAGES = "${PN}"
 
 SUMMARY:packagegroup-security-base = "Security base support"
 
-RDEPENDS:packagegroup-security-base = " \
+RDEPENDS:${PN} = " \
     auditd   \
     nftables \
     usbguard \
