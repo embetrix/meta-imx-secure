@@ -28,4 +28,6 @@ RDEPENDS:${PN} = " \
     iperf3 \
     can-utils \
     avb-utils \
+    leancrypto \
+    leancrypto-module \
     "
