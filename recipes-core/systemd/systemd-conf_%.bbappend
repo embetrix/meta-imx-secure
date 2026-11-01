@@ -13,6 +13,9 @@ SRC_URI += " \
     ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://security-harden.conf file://system-hardening.conf', '', d)} \
 "
 
+# Use a full board reset for normal reboots on i.MX95
+SRC_URI:append:mx95-nxp-bsp = " file://board-reset.conf"
+
 do_install:append() {
 	if [ "${IMX_SECURITY_PROFILE}" = "prod" ]; then
 		install -d ${D}${sysconfdir}/sysctl.d
@@ -40,6 +43,11 @@ do_install:append() {
 		${D}${systemd_system_unitdir}/systemd-rfkill.service.d/override.conf
 }
 
+do_install:append:mx95-nxp-bsp() {
+	install -D -m 0644 ${UNPACKDIR}/board-reset.conf \
+		${D}${systemd_system_unitdir}/systemd-reboot.service.d/board-reset.conf
+}
+
 FILES:${PN} += " \
     ${sysconfdir}/sysctl.d \
     ${systemd_unitdir}/timesyncd.conf.d \
@@ -47,3 +55,5 @@ FILES:${PN} += " \
     ${systemd_system_unitdir}/systemd-journal-flush.service.d \
     ${systemd_system_unitdir}/systemd-rfkill.service.d \
 "
+
+FILES:${PN}:append:mx95-nxp-bsp = " ${systemd_system_unitdir}/systemd-reboot.service.d"
