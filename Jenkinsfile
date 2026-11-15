@@ -47,7 +47,7 @@ pipeline {
         stage('Build image') {
             steps {
                 sh 'kas build --force-checkout --update kas-imx-secure.yml:kas-signing-keys.yml'
-                archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-${params.MACHINE}.rootfs-*-${params.SECURITY_PROFILE}.*," +
+                archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.sign," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.fuses/*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/fitImage",
