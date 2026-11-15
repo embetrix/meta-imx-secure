@@ -290,7 +290,7 @@ Artifacts are written to `build/tmp/deploy/images/<MACHINE>/`:
 | `imx-boot*.sign` | Signed boot containers |
 | `imx-boot*.fuses/` | SPSDK SRK hashes and fuse scripts |
 
-Versioned image filenames include the security profile, for example `imx-secure-image-<MACHINE>.rootfs-<DATETIME>-prod.wic.gz`. Unversioned image links point to the latest build in that deploy directory.
+Versioned image filenames include the security profile and Git version, for example `imx-secure-image-<MACHINE>.rootfs-prod_<VERSION>.wic.gz`.
 
 ### Layer dependencies
 
