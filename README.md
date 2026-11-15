@@ -179,6 +179,8 @@ The [WIC layout](files/wic/imx-boot-secure-bootpart.wks.in) writes `imx-boot` be
 
 | Image / partition | Offset | Default size | Mount point | Purpose |
 | --- | --- | --- | --- | --- |
+| `fwenv` | 20 KiB | 6 KiB | NA | Firmware environment |
+| `fwenv` redundant | 26 KiB | 6 KiB | NA | Firmware environment copy |
 | `imx-boot` | 32 KiB (`0x8000`) | Image size | NA | Boot firmware, written raw outside the partition table |
 | `imx-boot` redundant | 4 MiB (`0x400000`) | Image size | NA | Second boot image set location with the default secondary boot offset |
 | `boot_a` | 8 MiB | 512 MiB | `/boot` | Initial active FIT image |
@@ -280,8 +282,6 @@ require conf/distro/include/imx-secure-distro.inc
 ```
 
 Use [imx-secure-image-base.bb](recipes-core/images/imx-secure-image-base.bb) as the image base, keeping its read-only root filesystem and security packages. Machine and storage defaults are in [imx-secure.inc](conf/machine/include/imx-secure.inc).
-
-[packagegroup-imx-secure.bb](recipes-core/packagegroup/packagegroup-imx-secure.bb) selects OP-TEE, SMW and ELE runtime support.
 
 A [Docker](Dockerfile) build environment and [Jenkins](Jenkinsfile) pipeline are included for automated builds.
 
