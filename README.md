@@ -31,7 +31,7 @@ These boards are tested:
 
 Other boards may need further adaptation. Submit patches or pull requests to add support for additional tested boards.
 
-PQC support depends on the SoC, silicon revision and container format. See [NXP's i.MX95 B0 example](https://spsdk.readthedocs.io/en/latest/examples/ahab/imx95/imx95_ahab_sign.html) and the [layer signing options](classes-recipe/imx-boot-sign.bbclass). HABv4 signing is not implemented.
+PQC support depends on the SoC, silicon revision and container format. See [NXP's i.MX95 B0 example](https://spsdk.readthedocs.io/en/latest/examples/ahab/imx95/imx95_ahab_sign.html) and the [layer signing options](classes-recipe/imx-ahab-sign.bbclass). HABv4 signing is not implemented.
 
 ## Quick start
 
@@ -250,12 +250,6 @@ The update agent must manage update verification, slot activation, boot-success 
 i.MX ROM selects between redundant boot firmware image sets using container software versions and boot settings. With version-based selection enabled it tries the image set with the higher software version first. Set `SW_VERSION` when building `imx-boot` to assign this version.
 
 Keep each firmware copy aligned with its matching FIT and root filesystem slot. The WIC image writes only the first firmware copy, so the update or provisioning process must populate the second copy. See [Partitions layout](#partitions-layout) for the default locations.
-
-On i.MX95, request a full board reset after a boot firmware update so ROM selects the image set again:
-
-```sh
-systemctl reboot --reboot-argument=board_reset
-```
 
 ## Build integration
 
