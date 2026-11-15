@@ -49,7 +49,7 @@ pipeline {
                 sh 'kas build --force-checkout --update kas-imx-secure.yml:kas-signing-keys.yml'
                 archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-${params.MACHINE}.rootfs-*-${params.SECURITY_PROFILE}.*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.sign," +
-                                            "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.sign.fuses/*," +
+                                            "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.fuses/*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/fitImage",
                                  excludes: '**/*.ext3,**/*.ext4,**/*.wic,**/*.erofs,**/*.erofs.avbverity',
                                  followSymlinks: false,

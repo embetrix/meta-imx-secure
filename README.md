@@ -204,7 +204,7 @@ Stop at the U-Boot prompt, then disconnect the serial terminal so `nxpele` can u
 Find the following file for the image you flashed:
 
 ```text
-build/tmp/deploy/images/<MACHINE>/<BOOT_IMAGE>.sign.fuses/ahab_oem<N>_srk0_hash_nxpele.bcf
+build/tmp/deploy/images/<MACHINE>/<BOOT_IMAGE>.fuses/ahab_oem<N>_srk0_hash_nxpele.bcf
 ```
 
 Check the family, revision and fuse values in the script header and commands. The generated scripts for different OEM containers use the same SRK hash, so program that hash once. For PQC builds using a second SRK table, also program the matching `srk1` script.
@@ -288,7 +288,7 @@ Artifacts are written to `build/tmp/deploy/images/<MACHINE>/`:
 | `imx-secure-image-<MACHINE>.rootfs.sbom-cve-check.spdx.json` | SPDX SBOM with CVE scan results, production builds only |
 | `fitImage` | Signed FIT containing Linux, the bundled initramfs and device trees |
 | `imx-boot*.sign` | Signed boot containers |
-| `imx-boot*.sign.fuses/` | SPSDK SRK hashes and fuse scripts |
+| `imx-boot*.fuses/` | SPSDK SRK hashes and fuse scripts |
 
 Versioned image filenames include the security profile, for example `imx-secure-image-<MACHINE>.rootfs-<DATETIME>-prod.wic.gz`. Unversioned image links point to the latest build in that deploy directory.
 

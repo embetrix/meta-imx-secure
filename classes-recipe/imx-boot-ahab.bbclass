@@ -12,7 +12,7 @@
 # Verify OEM signatures, image hashes and unchanged image data and metadata
 # Keep unsigned build outputs and deploy verified copies as <image>.sign
 # Deploy imx-boot.sign and imx-boot.tagged.sign for the BSP's default image
-# Deploy SPSDK SRK hashes and fuse scripts in <image>.sign.fuses/
+# Deploy SPSDK SRK hashes and fuse scripts in <image>.fuses/
 # This class does not program SRK hash fuses or change the device lifecycle
 #
 # Generate keys and a kas fragment with tools/generate-signing-keys.sh --key-dir <KEY_DIR>, then run:
@@ -68,7 +68,7 @@ python imx_sign_deploy() {
     # This hook runs only after every variant has passed signing and verification
     for config, name in images:
         shutil.copy2(source / name, deploy / (name + ".sign"))
-        shutil.copytree(source / (name + ".fuses"), deploy / (name + ".sign.fuses"),
+        shutil.copytree(source / (name + ".fuses"), deploy / (name + ".fuses"),
                         dirs_exist_ok=True)
 
     link = deploy / "imx-boot.sign"
