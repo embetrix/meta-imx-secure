@@ -4,7 +4,8 @@
 # Use OE-Core defaults from defaultsetup.conf
 DISTRO = "imx-secure"
 DISTRO_NAME = "i.MX Secure"
-DISTRO_VERSION = "0.1"
+INHERIT += "imx-secure-version"
+DISTRO_VERSION = "${IMX_SECURE_VERSION}"
 
 DISTRO_FEATURES += "polkit ima integrity security"
 
@@ -12,8 +13,8 @@ DISTRO_FEATURES += "polkit ima integrity security"
 IMX_SECURITY_PROFILE ??= "dev"
 INHERIT += "imx-security-profile"
 
-# Include the security profile in image filenames
-IMAGE_NAME:append = "-${IMX_SECURITY_PROFILE}"
+# Use the security profile and Git version in image filenames
+IMAGE_VERSION_SUFFIX = "-${IMX_SECURITY_PROFILE}_${IMX_SECURE_VERSION}"
 
 # Allow password-free logins in development images
 EXTRA_IMAGE_FEATURES:append = " ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', \
