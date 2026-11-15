@@ -18,6 +18,7 @@ RDEPENDS:${PN}:append = " \
                 e2fsprogs-e2fsck \
                 dosfstools \
                 libdevmapper \
+                libubootenv-bin \
                 keyutils \
                 ima-evm-keys \
                 avb-utils \

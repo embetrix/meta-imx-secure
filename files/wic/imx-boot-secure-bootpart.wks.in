@@ -5,6 +5,8 @@
 # plus secdata and data volumes
 # Boot A is populated and root B holds the image for first-boot encryption
 
+# Reserve two 6 KiB fwenv copies before imx-boot without adding a GPT entry
+part fwenv    --ondisk mmcblk --source empty      --sourceparams="fill" --no-table --offset 20K --fixed-size 12K
 part imx-boot --ondisk mmcblk --source rawcopy    --sourceparams="file=${IMX_BOOTLOADER}" --no-table --align ${IMX_BOOT_SEEK}
 part /boot    --ondisk mmcblk --part-name boot_a  --label boot_a --fixed-size ${BOOT_PART_SZ} --fstype=vfat --source bootimg-partition --align 8192 --active
 part /        --ondisk mmcblk --part-name root_a  --fixed-size ${ROOT_PART_SZ}

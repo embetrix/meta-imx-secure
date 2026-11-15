@@ -30,4 +30,5 @@ RDEPENDS:${PN} = " \
     avb-utils \
     leancrypto \
     leancrypto-module \
+    libubootenv-bin \
     "
