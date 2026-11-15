@@ -16,9 +16,9 @@ INHERIT += "imx-security-profile"
 # Use the security profile and Git version in image filenames
 IMAGE_VERSION_SUFFIX = "-${IMX_SECURITY_PROFILE}_${IMX_SECURE_VERSION}"
 
-# Allow password-free logins in development images
+# Allow root login in development images
 EXTRA_IMAGE_FEATURES:append = " ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', \
-    'allow-empty-password allow-root-login empty-root-password', '', d)}"
+    'allow-root-login', '', d)}"
 
 # Remove development login features from production images
 IMAGE_FEATURES:remove = "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', \

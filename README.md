@@ -68,10 +68,19 @@ Keep private keys secure and maintain an offline backup. Run the helper again if
 
 | Profile | Intended use | Access and hardening |
 | --- | --- | --- |
-| `dev` (default) | Bring-up and debugging | Serial access, debug tools and password-free root login |
+| `dev` (default) | Bring-up and debugging | Serial access, debug tools and password login |
 | `prod` | Product integration | Requires boot signing, applies kernel and userspace hardening, restricts the U-Boot console, disables the Linux serial console and serial getty and enables SSH CA authentication with password login disabled |
 
 Both profiles include storage encryption, root filesystem verification and enforced runtime integrity checks. Use development images only on an isolated test network.
+
+Default accounts for development login:
+
+| User | Password | Access |
+| --- | --- | --- |
+| `imx` | `notrustnofun` | Regular user |
+| `root` | `1234butbetter` | Administrator |
+
+Set `IMX_USER_PASSWD_HASH` and `ROOT_USER_PASSWD_HASH` to use your own password hashes. The `prod` profile disables SSH password login and serial login.
 
 ### 4. Build
 
