@@ -73,15 +73,6 @@ Keep private keys secure and maintain an offline backup. Run the helper again if
 
 Both profiles include storage encryption, root filesystem verification and enforced runtime integrity checks. Use development images only on an isolated test network.
 
-Default accounts for development login:
-
-| User | Password | Access |
-| --- | --- | --- |
-| `imx` | `notrustnofun` | Regular user |
-| `root` | `1234butbetter` | Administrator |
-
-Set `IMX_USER_PASSWD_HASH` and `ROOT_USER_PASSWD_HASH` to use your own password hashes. The `prod` profile disables SSH password login and serial login.
-
 ### 4. Build
 
 Replace `<MACHINE>` with a machine name from [Supported hardware](#supported-hardware):
@@ -111,7 +102,16 @@ On first boot, the initramfs creates the storage keys, copies the plaintext root
 
 **Keep power connected during first-boot initialization. The migration is not resilient to power loss.**
 
-### 6. Connect with SSH
+### 6. Login and SSH
+
+Default accounts for development login:
+
+| User | Password | Access |
+| --- | --- | --- |
+| `imx` | `notrustnofun` | Regular user |
+| `root` | `1234butbetter` | Administrator |
+
+Set `IMX_USER_PASSWD_HASH` and `ROOT_USER_PASSWD_HASH` to use your own password hashes. The `prod` profile disables SSH password login and serial login.
 
 For a development image:
 
