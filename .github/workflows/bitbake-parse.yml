@@ -41,6 +41,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          # Include release tags and history for IMX_SECURE_VERSION
+          fetch-depth: 0
           persist-credentials: false
 
       - uses: actions/download-artifact@v4
