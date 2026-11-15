@@ -10,4 +10,4 @@ inherit imx-boot-version
 export IMX_MKIMAGE_SW_VERSION = "${SW_VERSION}"
 MKIMAGE_EXTRA_ARGS:append = " ROLLBACK_INDEX_IN_CONTAINER=${SW_VERSION}"
 
-inherit_defer ${@bb.utils.contains('IMX_SIGN_ENABLE', '1', 'imx-boot-ahab', '', d)}
+inherit_defer ${@bb.utils.contains('IMX_SIGN_ENABLE', '1', 'imx-boot-ahab-sign', '', d)}

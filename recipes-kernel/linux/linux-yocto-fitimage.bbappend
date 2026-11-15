@@ -2,7 +2,7 @@
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
 IMX_FIT_AHAB_ENABLE ??= "0"
-inherit_defer ${@bb.utils.contains('IMX_FIT_AHAB_ENABLE', '1', 'imx-fit-ahab', '', d)}
+inherit_defer ${@bb.utils.contains('IMX_FIT_AHAB_ENABLE', '1', 'imx-fitimage-ahab-sign', '', d)}
 
 do_compile[file-checksums] += "${@imx_fit_key_checksums(d, 'FIT_KERNEL_SIGN')}"
 do_compile[depends] += "${@bb.utils.contains('UBOOT_SIGN_ENABLE', '1', 'virtual/bootloader:do_deploy', '', d)}"
