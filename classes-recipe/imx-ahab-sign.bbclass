@@ -1,27 +1,8 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-# Sign and verify i.MX8/9 AHAB boot images using SPSDK:
-# https://github.com/nxp-mcuxpresso/spsdk
-# NXP direct signing guide, section 11:
-# https://community.nxp.com/t5/Multi-Source-Translation-Content/2377244-en-US/ta-p/2386026
-# AHAB only, HABv4 signing is not implemented
-# Family and revision support depends on the installed SPSDK version
-#
-# Sign unsigned and OEM containers, preserving NXP and V2X containers
-# Verify OEM signatures, image hashes and unchanged image data and metadata
-# Keep unsigned build outputs and deploy verified copies as <image>.sign
-# Deploy imx-boot.sign and imx-boot.tagged.sign for the BSP's default image
-# Deploy SPSDK SRK hashes and fuse scripts in <image>.sign.fuses/
-# This class does not program SRK hash fuses or change the device lifecycle
-#
-# Generate keys and a kas fragment with tools/generate-signing-keys.sh --key-dir <KEY_DIR>, then run:
-# kas build kas-imx-secure.yml:kas-signing-keys.yml
-# Or enable in local.conf or distro configuration with existing keys:
-# INHERIT += "imx-signing-keys"
-# IMX_SIGN_ENABLE = "1"
-# IMX_SIGN_KEYDIR = "/path/to/signing-keys"
-# Set IMX_SIGN_DEBUG = "1" to show signing details in the build console
+# Shared AHAB signing settings and SPSDK helpers
+# This class does not add build tasks
 #
 # By default, generate ${T}/ahab-sign.yaml from the settings below
 # IMX_SIGN_SRK_FILES lists exactly four public keys or certificates in SRK order
@@ -50,7 +31,7 @@
 # SoC formats, SPSDK profiles and PQC revisions are listed in imx_sign_soc_data
 # Second key sets require a listed family/revision pair and AHAB v2 OEM containers
 # Encryption and certificate delegation are not supported yet
-# The u-boot-imx bbappend enables boot authentication when signing is enabled
+
 
 IMX_SIGN_ENABLE ??= "0"
 IMX_SIGN_KEYDIR ??= ""
@@ -122,24 +103,7 @@ IMX_SIGN_BACKEND ??= "${@{'ahab': 'spsdk', 'hab4': 'cst'}.get(d.getVar('IMX_SIGN
 IMX_SPSDK_FAMILY ??= "${@imx_sign_family(d)}"
 IMX_SPSDK_REVISION ??= "${@imx_sign_revision(d)}"
 
-# Select the memory type for each UBOOT_CONFIG entry, with a fallback for raw SD/eMMC images
-# Override the fallback or add mappings such as IMX_SPSDK_MEMORY_TYPE[custom] = "flexspi_nor"
-IMX_SPSDK_MEMORY_TYPE ??= "serial_downloader"
-IMX_SPSDK_MEMORY_TYPE[fspi] ?= "flexspi_nor"
-
 IMX_SIGN_DEBUG ??= "0"
-IMX_SIGN_OUTPUT_DIR = "${WORKDIR}/imx-boot-signed"
-
-def imx_sign_images(d):
-    configs = (d.getVar("UBOOT_CONFIG") or "").split()
-    targets = (d.getVar("IMXBOOT_TARGETS") or "").split()
-    if not configs or not targets:
-        bb.fatal("imx-boot signing needs UBOOT_CONFIG and IMXBOOT_TARGETS")
-    for config in configs:
-        for target in targets:
-            name = "imx-boot%s-%s-%s.bin-%s" % (
-                d.getVar("BOOT_VARIANT") or "", d.getVar("MACHINE"), config, target)
-            yield config, name
 
 def imx_sign_config(d):
     import json
@@ -191,99 +155,10 @@ def imx_sign_config(d):
     output.write_text(template)
     return str(output)
 
-python do_imx_boot_sign() {
-    import json
-    import subprocess
-    import textwrap
-
-    debug = d.getVar("IMX_SIGN_DEBUG") == "1"
-    sign_config = imx_sign_config(d)
-    if debug:
-        bb.verbnote("imx-boot signing: SoC=%s format=%s backend=%s family=%s revision=%s" % (
-            d.getVar("IMX_SIGN_SOC"), d.getVar("IMX_SIGN_FORMAT"),
-            d.getVar("IMX_SIGN_BACKEND"), d.getVar("IMX_SPSDK_FAMILY"),
-            d.getVar("IMX_SPSDK_REVISION")))
-        bb.verbnote("Signing configuration: %s" % sign_config)
-
-    command = [
-        os.path.join(d.getVar("STAGING_BINDIR_NATIVE"), "python3-native", "python3"),
-        "-",
-        "--config", sign_config,
-        "--key-dir", d.getVar("IMX_SIGN_KEYDIR"),
-        "--family", d.getVar("IMX_SPSDK_FAMILY"),
-        "--revision", d.getVar("IMX_SPSDK_REVISION"),
-        "--pqc-profiles", json.dumps(imx_sign_pqc_profiles()),
-    ]
-    if d.getVar("IMX_SIGN_PQC_ENABLE") == "1":
-        command += ["--pqc-key-dir", d.getVar("IMX_SIGN_PQC_KEYDIR")]
-    environment = os.environ.copy()
-    environment["PYTHONNOUSERSITE"] = "1"
-    environment["SPSDK_CACHE_FOLDER"] = os.path.join(d.getVar("T"), "spsdk-cache")
-    environment["SPSDK_DEBUG_LOG_FILE"] = os.path.join(d.getVar("T"), "spsdk-debug.log")
-    images = list(imx_sign_images(d))
-    for config, name in images:
-        memory = d.getVarFlag("IMX_SPSDK_MEMORY_TYPE", config) or d.getVar("IMX_SPSDK_MEMORY_TYPE")
-        source = os.path.join(d.getVar("S"), name)
-        output = os.path.join(d.getVar("IMX_SIGN_OUTPUT_DIR"), name)
-        bb.note("Signing %s (%s, %s, %s)" % (
-            name, d.getVar("IMX_SPSDK_FAMILY"), d.getVar("IMX_SPSDK_REVISION"), memory))
-        if debug:
-            bb.verbnote("Signing %s -> %s (memory type: %s)" % (source, output, memory))
-        result = subprocess.run(command + [
-            "--memory-type", memory,
-            "--input", source,
-            "--output", output,
-        ], input=textwrap.dedent(d.getVar("imx_sign_ahab")), text=True,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=environment)
-        if result.returncode:
-            detail = result.stdout.strip() or "SPSDK exited with status %s" % result.returncode
-            bb.fatal("Signing %s failed:\n%s" % (name, detail))
-        if result.stdout:
-            bb.note(result.stdout.rstrip())
-        if debug:
-            bb.verbnote("Verified signatures and unchanged payloads: %s" % output)
-            bb.verbnote("SPSDK SRK hashes and fuse scripts: %s.fuses/" % output)
-
-}
-do_imx_boot_sign[cleandirs] = "${IMX_SIGN_OUTPUT_DIR}"
-do_imx_boot_sign[vardeps] += "IMX_SPSDK_MEMORY_TYPE UBOOT_CONFIG IMXBOOT_TARGETS BOOT_VARIANT MACHINE"
-
-python imx_sign_deploy() {
-    import shutil
-    from pathlib import Path
-
-    source = Path(d.getVar("IMX_SIGN_OUTPUT_DIR"))
-    deploy = Path(d.getVar("DEPLOYDIR"))
-    images = list(imx_sign_images(d))
-    default = (deploy / "imx-boot").resolve().name
-    if default not in [name for config, name in images]:
-        bb.fatal("No signed variant for deployed imx-boot: %s" % default)
-
-    # This hook runs only after every variant has passed signing and verification
-    for config, name in images:
-        shutil.copy2(source / name, deploy / (name + ".sign"))
-        shutil.copytree(source / (name + ".fuses"), deploy / (name + ".sign.fuses"),
-                        dirs_exist_ok=True)
-
-    link = deploy / "imx-boot.sign"
-    link.unlink(missing_ok=True)
-    link.symlink_to(default + ".sign")
-
-    tagged = deploy / "imx-boot.tagged.sign"
-    shutil.copy2(link, tagged)
-    # Match the size tag appended by uuu_bootloader_tag.bbclass
-    size = tagged.stat().st_size
-    with tagged.open("ab") as output:
-        output.write(("UUUBURNXXOEUZX7+A-XY5601QQWWZ%dEND\n" % size).encode("ascii"))
-}
-
-python __anonymous() {
-    if d.getVar("IMX_SIGN_ENABLE") != "1":
-        imx_validate_signing_keys(d)
-        return
+def imx_ahab_validate(d):
     sign_format = d.getVar("IMX_SIGN_FORMAT")
     if sign_format == "hab4":
-        bb.fatal("HABv4 imx-boot signing is not implemented for %s\n"
+        bb.fatal("HABv4 signing is not implemented for %s\n"
                  'Set IMX_SIGN_ENABLE = "0" to build without boot image signing' % d.getVar("MACHINE"))
     if sign_format != "ahab":
         bb.fatal("Unsupported IMX_SIGN_FORMAT: %r\nThis class supports 'ahab'" % sign_format)
@@ -305,23 +180,54 @@ python __anonymous() {
             bb.fatal("PQC signing is not supported for %s (%s, revision %s)\n"
                      'Set IMX_SIGN_PQC_ENABLE = "0" to use classical AHAB signing' %
                      (d.getVar("MACHINE"), d.getVar("IMX_SPSDK_FAMILY"), revision))
-    # Check boot image selections before compilation
-    list(imx_sign_images(d))
+
+def imx_ahab_setup(d, task):
+    import os
+
     imx_validate_signing_keys(d)
     # BitBake does not walk directory symlinks when hashing inputs
-    d.setVar("IMX_SIGN_KEYDIR", os.path.realpath(d.getVar("IMX_SIGN_KEYDIR")))
-    if d.getVar("IMX_SIGN_PQC_ENABLE") == "1":
-        d.setVar("IMX_SIGN_PQC_KEYDIR", os.path.realpath(d.getVar("IMX_SIGN_PQC_KEYDIR")))
-        d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_PQC_KEYDIR"))
-
-    d.appendVar("DEPENDS", " python3-spsdk-native")
-    # Copy before deploy's sstate postfunc publishes DEPLOYDIR
-    d.prependVarFlag("do_deploy", "postfuncs", "imx_sign_deploy ")
-    d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_KEYDIR"))
+    for name in ("IMX_SIGN_KEYDIR", "IMX_SIGN_PQC_KEYDIR"):
+        if name == "IMX_SIGN_PQC_KEYDIR" and d.getVar("IMX_SIGN_PQC_ENABLE") != "1":
+            continue
+        d.setVar(name, os.path.realpath(d.getVar(name)))
+        d.appendVarFlag(task, "file-checksums", " %s:True" % d.getVar(name))
     if d.getVar("IMX_SIGN_CONFIG"):
-        d.appendVarFlag("do_imx_boot_sign", "file-checksums", " %s:True" % d.getVar("IMX_SIGN_CONFIG"))
-    bb.build.addtask("do_imx_boot_sign", "do_deploy", "do_compile", d)
-}
+        d.appendVarFlag(task, "file-checksums", " %s:True" % d.getVar("IMX_SIGN_CONFIG"))
+    d.appendVar("DEPENDS", " python3-spsdk-native")
+
+def imx_ahab_run(d, source, output, options):
+    import json
+    import os
+    import subprocess
+    import textwrap
+
+    command = [
+        os.path.join(d.getVar("STAGING_BINDIR_NATIVE"), "python3-native", "python3"),
+        "-", "--config", imx_sign_config(d),
+        "--key-dir", d.getVar("IMX_SIGN_KEYDIR"),
+        "--family", d.getVar("IMX_SPSDK_FAMILY"),
+        "--revision", d.getVar("IMX_SPSDK_REVISION"),
+        "--pqc-profiles", json.dumps(imx_sign_pqc_profiles()),
+        "--input", str(source), "--output", str(output),
+    ]
+    if d.getVar("IMX_SIGN_PQC_ENABLE") == "1":
+        command += ["--pqc-key-dir", d.getVar("IMX_SIGN_PQC_KEYDIR")]
+    environment = os.environ.copy()
+    environment["PYTHONNOUSERSITE"] = "1"
+    environment["SPSDK_CACHE_FOLDER"] = os.path.join(d.getVar("T"), "spsdk-cache")
+    environment["SPSDK_DEBUG_LOG_FILE"] = os.path.join(d.getVar("T"), "spsdk-debug.log")
+    bb.note("Signing %s (%s, %s)" % (
+        source, d.getVar("IMX_SPSDK_FAMILY"), d.getVar("IMX_SPSDK_REVISION")))
+    result = subprocess.run(command + options,
+        input=textwrap.dedent(d.getVar("imx_sign_ahab")), text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=environment)
+    if result.returncode:
+        detail = result.stdout.strip() or "SPSDK exited with status %s" % result.returncode
+        bb.fatal("Signing %s failed:\n%s" % (os.path.basename(source), detail))
+    if result.stdout:
+        bb.note(result.stdout.rstrip())
+    if d.getVar("IMX_SIGN_DEBUG") == "1":
+        bb.verbnote("Verified signatures and unchanged payloads: %s" % output)
 
 python imx_sign_ahab() {
     import argparse
@@ -423,6 +329,18 @@ python imx_sign_ahab() {
                 and not any("v2x" in image.flags_core_id_name for image in container.image_array))
 
 
+    def verify_oem_container(container, config):
+        if container.flag_srk_set != FlagsSrkSet.OEM:
+            raise ValueError("An OEM container was left unsigned")
+        if "signer_#2" in config and container.signature_block.signature_2 is None:
+            raise ValueError("An OEM container is missing the requested second signature")
+        # SPSDK treats dummy or unverifiable signatures as warnings
+        authenticity = container.signature_block.verify_container_authenticity(
+            container.get_signature_data())
+        if authenticity.result != VerifierResult.SUCCEEDED:
+            raise ValueError(f"OEM signature verification did not succeed:\n{authenticity}")
+
+
     def sign_image(config, source, destination, memory_type):
         family = FamilyRevision.load_from_config(config)
         memory = MemoryType.from_label(memory_type)
@@ -449,15 +367,7 @@ python imx_sign_ahab() {
                     [(i.export(), i.image) for i in new.image_array]):
                 raise ValueError("Signing changed image data or metadata")
             if signable(old):
-                if new.flag_srk_set != FlagsSrkSet.OEM:
-                    raise ValueError("An OEM container was left unsigned")
-                if "signer_#2" in config and new.signature_block.signature_2 is None:
-                    raise ValueError("An OEM container is missing the requested second signature")
-                # SPSDK treats dummy or unverifiable signatures as warnings
-                authenticity = new.signature_block.verify_container_authenticity(
-                    new.get_signature_data())
-                if authenticity.result != VerifierResult.SUCCEEDED:
-                    raise ValueError(f"OEM signature verification did not succeed:\n{authenticity}")
+                verify_oem_container(new, config)
                 signed_oem.append(new)
             elif old.export() != new.export():
                 raise ValueError("Signing changed a non-OEM container")
@@ -488,7 +398,7 @@ python imx_sign_ahab() {
                                  args.pqc_key_dir, args.pqc_profiles)
             sign_image(config, args.input, args.output, args.memory_type)
         except (SPSDKError, ValueError, OSError) as error:
-            parser.exit(1, f"imx-boot signing failed: {error}\n")
+            parser.exit(1, f"AHAB signing failed: {error}\n")
 
 
     if __name__ == "__main__":
