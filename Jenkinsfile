@@ -51,7 +51,7 @@ pipeline {
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.sign," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.fuses/*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/fitImage",
-                                 excludes: '**/*.ext3,**/*.ext4,**/*.wic,**/*.erofs,**/*.erofs.avbverity',
+                                 excludes: '**/*.ext3,**/*.ext4,**/*.testdata.json,**/*.wic,**/*.erofs,**/*.erofs.avbverity',
                                  followSymlinks: false,
                                  fingerprint: true,
                                  onlyIfSuccessful: true
