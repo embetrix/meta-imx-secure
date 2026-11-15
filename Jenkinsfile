@@ -20,7 +20,7 @@ pipeline {
     environment {
         KAS_CLONE_DEPTH = '1'
         KAS_MACHINE = "${params.MACHINE}"
-        KAS_TARGET = 'imx-secure-image'
+        KAS_TARGET = 'imx-secure-image-base'
         SECURITY_PROFILE = "${params.SECURITY_PROFILE}"
     }
 
@@ -47,7 +47,7 @@ pipeline {
         stage('Build image') {
             steps {
                 sh 'kas build --force-checkout --update kas-imx-secure.yml:kas-signing-keys.yml'
-                archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.*," +
+                archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.sign," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.fuses/*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/fitImage",

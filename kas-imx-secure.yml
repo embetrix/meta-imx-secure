@@ -8,7 +8,7 @@ header:
 
 machine: imx95-15x15-lpddr4x-frdm
 distro: imx-secure
-target: imx-secure-image
+target: imx-secure-image-base
 
 repos:
   meta-imx-secure:

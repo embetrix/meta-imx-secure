@@ -82,7 +82,7 @@ KAS_MACHINE="<MACHINE>" SECURITY_PROFILE=dev \
     kas build kas-imx-secure.yml:kas-signing-keys.yml
 ```
 
-Use `SECURITY_PROFILE=prod` for a production-profile build. The default distro is `imx-secure` and the target is `imx-secure-image`.
+Use `SECURITY_PROFILE=prod` for a production-profile build. The default distro is `imx-secure` and the target is `imx-secure-image-base`.
 
 Build output is written to `build/tmp/deploy/images/<MACHINE>/`. See [Build artifacts](#build-artifacts) for the generated files.
 
@@ -92,7 +92,7 @@ Unmount the SD card partitions, then write the complete disk image:
 
 ```sh
 sudo bmaptool copy \
-    "build/tmp/deploy/images/<MACHINE>/imx-secure-image-<MACHINE>.rootfs.wic.gz" \
+    "build/tmp/deploy/images/<MACHINE>/imx-secure-image-base-<MACHINE>.rootfs.wic.gz" \
     /dev/sdX
 ```
 
@@ -270,7 +270,7 @@ For an existing Yocto build, add the layers listed in [kas-imx-secure.yml](kas-i
 require conf/distro/include/imx-secure-distro.inc
 ```
 
-Use [imx-secure-image.bb](recipes-core/images/imx-secure-image.bb) as the image base, keeping its read-only root filesystem and security packages. Machine and storage defaults are in [imx-secure.inc](conf/machine/include/imx-secure.inc).
+Use [imx-secure-image-base.bb](recipes-core/images/imx-secure-image-base.bb) as the image base, keeping its read-only root filesystem and security packages. Machine and storage defaults are in [imx-secure.inc](conf/machine/include/imx-secure.inc).
 
 [packagegroup-imx-secure.bb](recipes-core/packagegroup/packagegroup-imx-secure.bb) selects OP-TEE, SMW and ELE runtime support.
 
@@ -282,15 +282,15 @@ Artifacts are written to `build/tmp/deploy/images/<MACHINE>/`:
 
 | Artifact | Purpose |
 | --- | --- |
-| `imx-secure-image-<MACHINE>.rootfs.wic.gz` | Complete disk image |
-| `imx-secure-image-<MACHINE>.rootfs.wic.bmap` | Block map for flashing |
-| `imx-secure-image-<MACHINE>.rootfs.erofs.avbverity.gz` | Root filesystem with AVB metadata and verity data |
-| `imx-secure-image-<MACHINE>.rootfs.sbom-cve-check.spdx.json` | SPDX SBOM with CVE scan results, production builds only |
+| `imx-secure-image-base-<MACHINE>.rootfs.wic.gz` | Complete disk image |
+| `imx-secure-image-base-<MACHINE>.rootfs.wic.bmap` | Block map for flashing |
+| `imx-secure-image-base-<MACHINE>.rootfs.erofs.avbverity.gz` | Root filesystem with AVB metadata and verity data |
+| `imx-secure-image-base-<MACHINE>.rootfs.sbom-cve-check.spdx.json` | SPDX SBOM with CVE scan results, production builds only |
 | `fitImage` | Signed FIT containing Linux, the bundled initramfs and device trees |
 | `imx-boot*.sign` | Signed boot containers |
 | `imx-boot*.fuses/` | SPSDK SRK hashes and fuse scripts |
 
-Versioned image filenames include the security profile and Git version, for example `imx-secure-image-<MACHINE>.rootfs-prod_<VERSION>.wic.gz`.
+Versioned image filenames include the security profile and Git version, for example `imx-secure-image-base-<MACHINE>.rootfs-prod_<VERSION>.wic.gz`.
 
 ### Layer dependencies
 

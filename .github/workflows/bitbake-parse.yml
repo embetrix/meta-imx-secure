@@ -68,5 +68,5 @@ jobs:
               # Generate disposable keys for parsing the signing configuration
               tools/generate-signing-keys.sh
               kas shell kas-imx-secure.yml:kas-signing-keys.yml \
-                --command "bitbake --parse-only imx-secure-image"
+                --command "bitbake --parse-only imx-secure-image-base"
             '
