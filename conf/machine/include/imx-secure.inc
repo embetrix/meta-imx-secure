@@ -14,6 +14,19 @@ UBOOT_SIGN_KEYNAME ?= "fit"
 FIT_SIGN_ALG ?= "rsa2048"
 FIT_SIGN_INDIVIDUAL = "0"
 
+# Optional AHAB wrapper for the signed FIT
+# Needs U-Boot to authenticate and unwrap the container before booting the FIT
+IMX_FIT_AHAB_ENABLE ?= "0"
+
+# AHAB FIT destination addresses
+IMX_FIT_AHAB_LOAD_ADDRESS:mx8qm-generic-bsp  ?= "0x90000000"
+IMX_FIT_AHAB_LOAD_ADDRESS:mx8qxp-generic-bsp ?= "0x90000000"
+IMX_FIT_AHAB_LOAD_ADDRESS:mx8dxl-generic-bsp ?= "0x90000000"
+IMX_FIT_AHAB_LOAD_ADDRESS:mx8ulp-generic-bsp ?= "0x90000000"
+IMX_FIT_AHAB_LOAD_ADDRESS:mx91-generic-bsp   ?= "0x90000000"
+IMX_FIT_AHAB_LOAD_ADDRESS:mx93-generic-bsp   ?= "0x90000000"
+IMX_FIT_AHAB_LOAD_ADDRESS:mx95-generic-bsp   ?= "0xa0000000"
+
 # Provide kernel artifacts for FIT generation alongside Image
 KERNEL_CLASSES:append = " kernel-fit-extra-artifacts"
 
@@ -32,7 +45,7 @@ IMX_BOOTLOADER ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', \
 WKS_FILE = "imx-boot-secure-bootpart.wks.in"
 
 # Keep BSP additions out of the active boot partition
-IMAGE_BOOT_FILES = "fitImage"
+IMAGE_BOOT_FILES = "${@bb.utils.contains('IMX_FIT_AHAB_ENABLE', '1', 'fitImage.ahab;fitImage', 'fitImage', d)}"
 WICVARS:append = " IMAGE_BOOT_FILES_label-boot_a"
 do_image_wic[depends] += "linux-yocto-fitimage:do_deploy"
 

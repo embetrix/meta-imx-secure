@@ -231,7 +231,9 @@ def imx_ahab_run(d, source, output, options):
 
 python imx_sign_ahab() {
     import argparse
+    import copy
     import json
+    import struct
     from pathlib import Path
 
     from spsdk.crypto.keys import PrivateKey, PublicKeyMLDSA
@@ -384,19 +386,89 @@ python imx_sign_ahab() {
         destination.write_bytes(data)
 
 
+    def sign_fit(config, source, destination, load_address, core, sw_version):
+        payload = source.read_bytes()
+        if len(payload) < 40:
+            raise ValueError("FIT image is too short")
+        magic, totalsize = struct.unpack_from(">II", payload)
+        if magic != 0xd00dfeed or not 40 <= totalsize <= len(payload):
+            raise ValueError("Invalid or truncated FIT image")
+        if load_address <= 0 or load_address % 4 or load_address + len(payload) > 2**64:
+            raise ValueError("FIT load address must be positive, 4-byte aligned and fit in 64 bits")
+        if not 0 <= sw_version <= 0xffff:
+            raise ValueError("FIT software version must fit in 16 bits")
+
+        family = FamilyRevision.load_from_config(config)
+        container = copy.deepcopy(dict(config))
+        for name in ("family", "revision"):
+            container.pop(name, None)
+        container["sw_version"] = sw_version
+        container["images"] = [{
+            "image_path": str(source.resolve()),
+            "image_offset": 0,
+            "load_address": load_address,
+            "entry_point": 0,
+            "image_type": "data",
+            "core_id": core,
+            "is_encrypted": False,
+        }]
+        image_config = Config({
+            "family": family.name, "revision": family.revision,
+            "target_memory": "standard",
+            "containers": [{"container": container}],
+        })
+        # A second signer requires the v2 container format
+        if "signer_#2" in config:
+            image_config["container_version"] = 2
+        image = AHABImage.load_from_config(image_config)
+        image.update_fields()
+        image.verify().validate()
+        data = image.export()
+
+        # Parse the output again and check the exact FIT bytes, including external data
+        signed = AHABImage.parse(data, family=family)
+        signed.verify().validate()
+        if len(signed.ahab_containers) != 1:
+            raise ValueError("FIT output must contain one OEM container")
+        result = signed.ahab_containers[0]
+        verify_oem_container(result, config)
+        expected = image.ahab_containers[0]
+        if len(result.image_array) != 1 or result.sw_version != sw_version:
+            raise ValueError("FIT container metadata changed")
+        entry = result.image_array[0]
+        if entry.export() != expected.image_array[0].export():
+            raise ValueError("FIT image metadata changed")
+        if entry.image[:len(payload)] != payload or any(entry.image[len(payload):]):
+            raise ValueError("FIT payload changed")
+        for table in range(2 if "signer_#2" in config else 1):
+            if not result.get_srk_hash(table) or result.get_srk_hash(table) != expected.get_srk_hash(table):
+                raise ValueError("FIT SRK hash changed")
+        destination.write_bytes(data)
+
+
     def main():
         parser = argparse.ArgumentParser(description=__doc__)
         for option in ("config", "key-dir", "input", "output"):
             parser.add_argument("--" + option, type=Path, required=True)
-        for option in ("family", "revision", "memory-type"):
+        for option in ("family", "revision"):
             parser.add_argument("--" + option, required=True)
+        parser.add_argument("--memory-type", default="serial_downloader")
+        parser.add_argument("--fit", action="store_true")
+        parser.add_argument("--load-address", type=lambda value: int(value, 0))
+        parser.add_argument("--core")
+        parser.add_argument("--sw-version", type=lambda value: int(value, 0), default=1)
         parser.add_argument("--pqc-key-dir", type=Path)
         parser.add_argument("--pqc-profiles", type=json.loads, default=[])
         args = parser.parse_args()
         try:
             config = load_config(args.config, args.key_dir, args.family, args.revision,
                                  args.pqc_key_dir, args.pqc_profiles)
-            sign_image(config, args.input, args.output, args.memory_type)
+            if args.fit:
+                if args.load_address is None or not args.core:
+                    raise ValueError("FIT signing needs --load-address and --core")
+                sign_fit(config, args.input, args.output, args.load_address, args.core, args.sw_version)
+            else:
+                sign_image(config, args.input, args.output, args.memory_type)
         except (SPSDKError, ValueError, OSError) as error:
             parser.exit(1, f"AHAB signing failed: {error}\n")
 

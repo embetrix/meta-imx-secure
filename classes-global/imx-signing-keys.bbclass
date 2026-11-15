@@ -5,7 +5,8 @@
 # Generate keys and a kas fragment with tools/generate-signing-keys.sh
 
 def imx_validate_signing_flags(d):
-    for name in ("IMX_SIGN_ENABLE", "IMX_SIGN_PQC_ENABLE", "IMX_SIGN_DEBUG", "UBOOT_SIGN_ENABLE"):
+    for name in ("IMX_SIGN_ENABLE", "IMX_SIGN_PQC_ENABLE", "IMX_SIGN_DEBUG", "UBOOT_SIGN_ENABLE",
+                 "IMX_FIT_AHAB_ENABLE"):
         value = d.getVar(name)
         if value is not None and value not in ("0", "1"):
             bb.fatal("%s must be 0 or 1" % name)
