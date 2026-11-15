@@ -24,7 +24,6 @@ IMAGE_FEATURES:append = " read-only-rootfs ssh-server-openssh"
 
 IMAGE_INSTALL += " \
     packagegroup-security-base \
-    packagegroup-imx-secure \
     ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'packagegroup-dev', '', d)}         \
     ${@bb.utils.contains('DISTRO_FEATURES', 'ima', 'packagegroup-ima', '', d)}              \
 "

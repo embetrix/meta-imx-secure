@@ -7,6 +7,19 @@ INHERIT += "imx-signing-keys"
 # Default PKCS#11 library
 OPENSSL_PKCS11_DEFAULT_PROVIDER ??= "optee"
 
+# Machine runtime support
+IMX_SECURE_ENCLAVE_PACKAGES ?= ""
+IMX_SECURE_ENCLAVE_PACKAGES:mx91-nxp-bsp = "imx-secure-enclave"
+IMX_SECURE_ENCLAVE_PACKAGES:mx93-nxp-bsp = "imx-secure-enclave"
+IMX_SECURE_ENCLAVE_PACKAGES:mx95-nxp-bsp = "imx-secure-enclave imx-secure-enclave-seco"
+
+MACHINE_EXTRA_RDEPENDS:append = " \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'optee-client optee-os smw', '', d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'optee', \
+        bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'optee-pqc', '', d), '', d)} \
+    ${IMX_SECURE_ENCLAVE_PACKAGES} \
+"
+
 # FIT signing
 UBOOT_SIGN_ENABLE ?= "${@d.getVar('IMX_SIGN_ENABLE') or '0'}"
 UBOOT_SIGN_KEYDIR ?= ""
