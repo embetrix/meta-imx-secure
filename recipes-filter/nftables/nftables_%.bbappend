@@ -1,35 +1,27 @@
-# SPDX-License-Identifier: MIT
-# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
-
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
-    file://firewall.nft \
-    file://nftables.service \
-    file://network-firewall.conf \
+    file://main.nft \
+    file://rules.d/00-definitions.nft \
+    file://rules.d/10-sets.nft \
+    file://rules.d/20-input.nft \
+    file://rules.d/30-forward.nft \
+    file://rules.d/40-output.nft \
     "
 
 inherit systemd
 
+PACKAGECONFIG[systemd] = "--with-unitdir=${systemd_system_unitdir}, --without-unitdir"
+PACKAGECONFIG:append = " ${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}"
 SYSTEMD_SERVICE:${PN} = "nftables.service"
+SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 
 do_install:append() {
-    install -d ${D}${sysconfdir}/nftables
-    install -m 0644 ${UNPACKDIR}/firewall.nft ${D}${sysconfdir}/nftables/
+    install -d ${D}${sysconfdir}/nftables/rules
+    install -m 0644 ${UNPACKDIR}/main.nft ${D}${sysconfdir}/nftables/rules/main.nft
 
-    install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${UNPACKDIR}/nftables.service ${D}${systemd_system_unitdir}/
-
-    # Keep network services stopped if the firewall cannot load
-    for unit in systemd-networkd.service wpa_supplicant@.service; do
-        install -d ${D}${systemd_system_unitdir}/${unit}.d
-        install -m 0644 ${UNPACKDIR}/network-firewall.conf \
-            ${D}${systemd_system_unitdir}/${unit}.d/nftables.conf
-    done
+    install -d ${D}${sysconfdir}/nftables/rules.d
+    install -m 0644 ${UNPACKDIR}/rules.d/*.nft ${D}${sysconfdir}/nftables/rules.d/
 }
 
-FILES:${PN} += " \
-    ${sysconfdir}/nftables \
-    ${systemd_system_unitdir}/systemd-networkd.service.d/nftables.conf \
-    ${systemd_system_unitdir}/wpa_supplicant@.service.d/nftables.conf \
-"
+FILES:${PN} += "${sysconfdir}/nftables"
