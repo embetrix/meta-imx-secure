@@ -36,7 +36,6 @@ repos:
     layers:
       meta-oe:
       meta-python:
-      meta-perl:
       meta-networking:
       meta-multimedia:
 
