@@ -4,7 +4,9 @@
 SUMMARY = "Minimal image for meta-imx-secure"
 LICENSE = "MIT"
 
-inherit core-image extrausers
+inherit core-image extrausers image-buildinfo
+
+IMAGE_FEATURES:append = " read-only-rootfs ssh-server-openssh"
 
 # Generate an escaped password hash with:
 # openssl passwd -5 -salt "$(openssl rand -hex 8)" 'some_very_secure_password' | sed 's/\$/\\$/g'
@@ -19,8 +21,6 @@ EXTRA_USERS_PARAMS = " \
     usermod -p '${IMX_USER_PASSWD_HASH}' imx; \
     usermod -p '${ROOT_USER_PASSWD_HASH}' root; \
 "
-
-IMAGE_FEATURES:append = " read-only-rootfs ssh-server-openssh"
 
 IMAGE_INSTALL += " \
     packagegroup-security-base \
