@@ -21,6 +21,19 @@ These features support [Cyber Resilience Act (CRA)](https://digital-strategy.ec.
 
 ## Supported hardware
 
+The layer targets NXP i.MX8 and i.MX9 boards. AHAB signing supports these SoCs:
+
+| Family | SoCs |
+| --- | --- |
+| i.MX8 | i.MX8QM, i.MX8QXP, i.MX8DX, i.MX8DXL, i.MX8ULP |
+| i.MX9 | i.MX91, i.MX93, i.MX95, i.MX937, i.MX943, i.MX952 |
+
+Feature support depends on the board and BSP. Boards outside the tested list may need further adaptation.
+
+PQC support depends on the SoC, silicon revision and container format. See [NXP's i.MX95 B0 example](https://spsdk.readthedocs.io/en/latest/examples/ahab/imx95/imx95_ahab_sign.html) and the [layer signing options](classes-recipe/imx-ahab-sign.bbclass). HABv4 signing is not implemented.
+
+### Tested hardware
+
 These boards are tested:
 
 | Board | `MACHINE` | Tested by |
@@ -29,9 +42,7 @@ These boards are tested:
 | [FRDM-IMX93](https://www.nxp.com/design/design-center/development-boards-and-designs/FRDM-IMX93) | `imx93-11x11-lpddr4x-frdm` | [embetrix](https://github.com/embetrix) |
 | [FRDM-IMX91](https://www.nxp.com/design/design-center/development-boards-and-designs/FRDM-IMX91) | `imx91-11x11-lpddr4-frdm`  | [embetrix](https://github.com/embetrix) |
 
-Other boards may need further adaptation. Submit patches or pull requests to add support for additional tested boards.
-
-PQC support depends on the SoC, silicon revision and container format. See [NXP's i.MX95 B0 example](https://spsdk.readthedocs.io/en/latest/examples/ahab/imx95/imx95_ahab_sign.html) and the [layer signing options](classes-recipe/imx-ahab-sign.bbclass). HABv4 signing is not implemented.
+Submit patches or pull requests to add more tested boards.
 
 ## Quick start
 
