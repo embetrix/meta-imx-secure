@@ -7,6 +7,8 @@ SRC_URI:append = " file://fw_env.config"
 
 do_install:append:class-target() {
     install -Dm0644 ${UNPACKDIR}/fw_env.config ${D}${sysconfdir}/fw_env.config
+    # Use an empty default environment
+    ln -sf /dev/null ${D}${sysconfdir}/u-boot-initial-env
 }
 
-FILES:${PN}-bin:append = " ${sysconfdir}/fw_env.config"
+FILES:${PN}-bin:append = " ${sysconfdir}/fw_env.config ${sysconfdir}/u-boot-initial-env"
