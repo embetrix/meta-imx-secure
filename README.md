@@ -7,7 +7,7 @@ A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and veri
 
 ## Features
 
-| Area | Capabilities |
+| Area | Description |
 | --- | --- |
 | Boot security | AHAB boot image signing with NXP SPSDK, signed Linux FIT images and optional AHAB PQC signing on supported silicon |
 | Storage | Encrypted read-only root filesystem, AVB metadata verification, dm-verity with forward error correction (FEC) and encrypted writable data |
@@ -42,264 +42,20 @@ These boards are tested:
 | [FRDM-IMX93](https://www.nxp.com/design/design-center/development-boards-and-designs/FRDM-IMX93) | `imx93-11x11-lpddr4x-frdm` | [embetrix](https://github.com/embetrix) |
 | [FRDM-IMX91](https://www.nxp.com/design/design-center/development-boards-and-designs/FRDM-IMX91) | `imx91-11x11-lpddr4-frdm`  | [embetrix](https://github.com/embetrix) |
 
-Submit patches or pull requests to add more tested boards.
+Open a pull request to add a tested board.
 
-## Quick start
+## Documentation
 
-### 1. Prepare the host
-
-Install `kas`, `openssl`, `ssh-keygen`, `bmaptool` and the host dependencies required by the Yocto release used in [kas-imx-secure.yml](kas-imx-secure.yml). Run the following commands from the layer directory.
-
-Use a **16 GB or larger SD card** with the default partition sizes.
-
-### 2. Generate signing keys
-
-```sh
-tools/generate-signing-keys.sh
-```
-
-The helper creates AHAB, FIT, kernel module, IMA/EVM, AVB and SSH CA keys under `imx-secure-keys/`. It generates `kas-signing-keys.yml` with the signing settings and absolute key paths. Existing keys are checked and reused.
-
-Keep private keys secure and maintain an offline backup. Run the helper again if you move the checkout or key directory to update the generated paths.
-
-### 3. Select the machine and profile
-
-`KAS_MACHINE` selects the board. `SECURITY_PROFILE` is passed to BitBake as `IMX_SECURITY_PROFILE`.
-
-| Profile | Intended use | Access and hardening |
-| --- | --- | --- |
-| `dev` (default) | Bring-up and debugging | Serial access, debug tools and password login |
-| `prod` | Product integration | Requires boot signing, applies kernel and userspace hardening, restricts the U-Boot console, disables the Linux serial console and serial getty and enables SSH CA authentication with password login disabled |
-
-Both profiles include storage encryption, root filesystem verification and enforced runtime integrity checks. Use development images only on an isolated test network.
-
-### 4. Build
-
-Replace `<MACHINE>` with a machine name from [Supported hardware](#supported-hardware):
-
-```sh
-KAS_MACHINE="<MACHINE>" SECURITY_PROFILE=dev \
-    kas build kas-imx-secure.yml:kas-signing-keys.yml
-```
-
-Use `SECURITY_PROFILE=prod` for a production-profile build. The default distro is `imx-secure` and the target is `imx-secure-image-base`.
-
-Build output is written to `build/tmp/deploy/images/<MACHINE>/`. See [Build artifacts](#build-artifacts) for the generated files.
-
-### 5. Flash and boot
-
-Unmount the SD card partitions, then write the complete disk image:
-
-```sh
-sudo bmaptool copy \
-    "build/tmp/deploy/images/<MACHINE>/imx-secure-image-base-<MACHINE>.rootfs.wic.gz" \
-    /dev/sdX
-```
-
-Replace `/dev/sdX` with the **whole SD card device**. This overwrites its contents.
-
-On first boot, the initramfs creates the storage keys, copies the plaintext root filesystem from slot B into encrypted slot A and formats the encrypted data volume. This takes longer than later boots.
-
-### 6. Login and SSH
-
-Default accounts for development login:
-
-| User | Password | Access |
-| --- | --- | --- |
-| `imx` | `notrustnofun` | Regular user |
-| `root` | `1234butbetter` | Administrator |
-
-Set `IMX_USER_PASSWD_HASH` and `ROOT_USER_PASSWD_HASH` to use your own password hashes. The `prod` profile disables SSH password login and serial login.
-
-For a development image:
-
-```sh
-ssh root@<device-ip>
-```
-
-For a production image, first sign your public key with the SSH CA key generated in step 2:
-
-```sh
-ssh-keygen -s imx-secure-keys/ssh-ca/ssh-ca-ed25519.key \
-    -I developer -n root -V +1h ~/.ssh/id_ed25519.pub
-```
-
-This issues a client SSH certificate valid for one hour. Keep validity as short as your work allows.
-
-Then connect using the matching private key:
-
-```sh
-ssh -i ~/.ssh/id_ed25519 root@<device-ip>
-```
-
-In production images, the SSH service waits for time synchronization. Ensure the device can reach its time servers so certificate validity checks use the correct time.
-
-## Security architecture
-
-### Secure Boot authentication workflow
-
-With boot signing enabled and AHAB provisioned for enforcement, the tested boards use this simplified flow:
-
-```mermaid
-flowchart TD
-    ROM["Boot ROM and<br/>EdgeLock Enclave"] --> EARLY["Authenticate early<br/>firmware and SPL"]
-    EARLY --> SPL["U-Boot SPL"]
-    SPL --> AUTH["Load and authenticate<br/>TF-A, OP-TEE and U-Boot<br/>through ELE"]
-    AUTH --> TFA["TF-A: BL31"]
-    TFA --> TEE["Initialize OP-TEE<br/>in the secure world"]
-    TFA --> UBOOT["Enter U-Boot<br/>in the normal world"]
-    UBOOT --> FIT["Verify Linux FIT using<br/>the embedded public key"]
-    FIT --> LINUX["Start Linux with bundled<br/>initramfs and device tree"]
-```
-
-On i.MX95, OEI initializes DDR and System Manager starts before SPL. On i.MX91 and i.MX93, SPL initializes DDR. See [NXP AN14641, section 3.1](https://www.nxp.com/docs/en/application-note/AN14641.pdf#page=2).
-
-ELE ROM verifies the NXP-signed ELE firmware. ELE firmware handles AHAB authentication of the OEM boot containers, including requests from SPL. See [NXP's AHAB secure boot guide](https://github.com/nxp-imx/uboot-imx/blob/lf_v2026.04/doc/imx/ahab/guides/mx8ulp_9x_secure_boot.txt).
-
-Early firmware and container contents vary by SoC. See [NXP's i.MX9 provisioning guide](https://mcuxpresso.nxp.com/secure/26.03/06_processor_specific_workflow.html#i-mx-9x-device-workflow) for the i.MX93 and i.MX95 image sets.
-
-Optional PQC signing covers the configured AHAB containers. Linux FIT signing remains separate.
-
-### Initramfs workflow
-
-The bundled initramfs:
-
-1. Loads or creates storage encryption keys.
-2. Opens the active root partition with dm-crypt.
-3. If no filesystem is detected, copies the inactive root image through dm-crypt to encrypt it.
-4. Verifies AVB metadata and sets up dm-verity.
-5. Mounts the verified read-only root filesystem and encrypted writable data filesystem.
-6. Switches to the real root filesystem and starts systemd.
-
-### Partitions layout
-
-The [WIC layout](files/wic/imx-boot-secure-bootpart.wks.in) writes `imx-boot` before the GPT partitions. Offsets below are measured from the start of the disk and use the default sizes:
-
-| Image / partition | Offset | Default size | Mount point | Purpose |
-| --- | --- | --- | --- | --- |
-| `fwenv` | 20 KiB | 6 KiB | NA | Firmware environment |
-| `fwenv` redundant | 26 KiB | 6 KiB | NA | Firmware environment copy |
-| `imx-boot` | 32 KiB (`0x8000`) | Image size | NA | Boot firmware, written raw outside the partition table |
-| `imx-boot` redundant | 4 MiB (`0x400000`) | Image size | NA | Second boot image set location with the default secondary boot offset |
-| `boot_a` | 8 MiB | 512 MiB | `/boot` | Initial active FIT image |
-| `root_a` | 520 MiB | 1024 MiB | `/` | Initial active encrypted and verified root |
-| `boot_b` | 1544 MiB | 512 MiB | `/var/boot-update` | Inactive boot slot |
-| `root_b` | 2056 MiB | 1024 MiB | Not mounted | Plain root image for first-boot migration, then inactive root slot |
-| `secdata` | 3080 MiB | 512 MiB | `/var/secdata` | Key blobs, OP-TEE storage, SMW database and ELE storage |
-| `data` | 3592 MiB | 4096 MiB | `/var/data` | Encrypted persistent storage for writable paths via volatile-binds |
-
-Set partition sizes with the BitBake variables `BOOT_PART_SZ`, `ROOT_PART_SZ`, `SECDATA_PART_SZ` and `DATA_PART_SZ` in `local.conf`.
-
-Mount points above show slot A active. See [OTA update integration](#ota-update-integration) for redundant boot images and A/B slot handling.
-
-`secdata` is a plain ext4 filesystem. It holds protected key blobs in `keys/`, OP-TEE storage in `tee/`, the SMW database in `smw/` and ELE persistent storage in `ele/`.
-
-## AHAB Secure Boot provisioning
-
-The build preserves NXP firmware containers and signs OEM containers. It exports SRK hashes and fuse scripts beside the signed images.
-
-In **OEM Open**, AHAB can report authentication failures, including a mismatch between the OEM SRK table hash and OTP fuses, without stopping boot. A successful boot alone does not prove correct provisioning. **OEM Closed** enforces authentication. See [NXP's authentication examples](https://docs.mcuxpresso.nxp.com/secure/latest/06_processor_specific_workflow.html#get-ele-events-with-nxpele-utility).
-
-**Fuse programming is irreversible.** Verify the signing keys, SoC family, silicon revision, signed image and recovery procedure before programming OTP fuses.
-
-### 1. Prepare the device
-
-Install NXP SPSDK on the host. Boot a signed development or provisioning image with the U-Boot console and `ele_message` command enabled. The production profile disables console access.
-
-Stop at the U-Boot prompt, then disconnect the serial terminal so `nxpele` can use the port.
-
-### 2. Select the fuse script
-
-Find the following file for the image you flashed:
-
-```text
-build/tmp/deploy/images/<MACHINE>/<BOOT_IMAGE>.fuses/ahab_oem<N>_srk0_hash_nxpele.bcf
-```
-
-Check the family, revision and fuse values in the script header and commands. The generated scripts for different OEM containers use the same SRK hash, so program that hash once. For PQC builds using a second SRK table, also program the matching `srk1` script.
-
-### 3. Program and verify the SRK hash
-
-Run the selected script from the host:
-
-```sh
-nxpele -f "<FAMILY>" --revision "<REVISION>" \
-    -d uboot_serial -p /dev/ttyACM0,115200 \
-    batch "<FUSE_SCRIPT>.bcf"
-```
-
-| SoC | SPSDK family |
+| Guide | Description |
 | --- | --- |
-| i.MX91 | `mimx9131` |
-| i.MX93 | `mimx9352` |
-| i.MX95 | `mimx9596` |
+| [Building images](docs/building-images.md) | Host tools, signing keys, profiles, kas builds and build artifacts |
+| [Device setup](docs/device-setup.md) | SD card flashing, development login and SSH certificates |
+| [Security architecture](docs/architecture.md) | Boot authentication, initramfs and partition layout |
+| [AHAB provisioning](docs/ahab-provisioning.md) | SRK fuse scripts, programming and verification |
+| [OTA update integration](docs/ota-updates.md) | A/B slots, boot firmware selection and update-agent responsibilities |
+| [Layer integration](docs/layer-integration.md) | Adding the layer to an existing Yocto build |
 
-Replace `<REVISION>` with the device revision, `<FUSE_SCRIPT>.bcf` with the selected script's full path and `/dev/ttyACM0` with the board's serial port.
-
-Read back each programmed word using the same connection options:
-
-```sh
-nxpele -f "<FAMILY>" --revision "<REVISION>" \
-    -d uboot_serial -p /dev/ttyACM0,115200 \
-    read-common-fuse --index <INDEX>
-```
-
-Compare the values with the script. Reboot the signed image and check `ahab_status` at the U-Boot prompt. Resolve all AHAB errors before closing the device lifecycle using NXP's procedure for the specific SoC.
-
-**The SRK scripts program the hash fuses. They do not close the device lifecycle.**
-
-See the [NXP nxpele guide](https://spsdk.readthedocs.io/en/latest/apps/nxpele.html#batch) and [fuse usage guide, section 4.5](https://www.nxp.com/docs/en/application-note/AN14954.pdf#page=10).
-
-## OTA Update integration
-
-The layer provides A/B boot and root filesystem slots selection. On supported i.MX8/9 MMC boots, U-Boot selects the FIT partition to match the boot firmware image set:
-
-| Boot image set | Slot | FIT partition | Root partition |
-| --- | --- | --- | --- |
-| 0 | A | `boot_a` | `root_a` |
-| 1 | B | `boot_b` | `root_b` |
-
-U-Boot passes `boot_slot=a` or `boot_slot=b` on the kernel command line. The initramfs uses `root=` to identify the disk and selects the matching root partition. Without `boot_slot=` it keeps the slot identified by `root=`.
-
-An update agent installs the new FIT in `/var/boot-update` and writes the root filesystem image with its AVB metadata and verity data to `/dev/mapper/update`. Both targets belong to the inactive slot. Writes to the inactive rootfs slot are encrypted by dm-crypt.
-
-The update agent must manage update verification, slot activation, boot-success confirmation and rollback. The layer provides the boot flow and storage mappings but does not include a complete OTA agent.
-
-### Boot firmware selection
-
-i.MX ROM selects between redundant boot firmware image sets using container software versions and boot settings. With version-based selection enabled it tries the image set with the higher software version first. Set `SW_VERSION` when building `imx-boot` to assign this version.
-
-Keep each firmware copy aligned with its matching FIT and root filesystem slot. The WIC image writes only the first firmware copy, so the update or provisioning process must populate the second copy. See [Partitions layout](#partitions-layout) for the default locations.
-
-## Build integration
-
-For an existing Yocto build, add the layers listed in [kas-imx-secure.yml](kas-imx-secure.yml) and the signing settings from the key helper. Select `DISTRO = "imx-secure"` or reuse [imx-secure-distro.inc](conf/distro/include/imx-secure-distro.inc) in your own distro configuration:
-
-```bitbake
-require conf/distro/include/imx-secure-distro.inc
-```
-
-Use [imx-secure-image-base.bb](recipes-core/images/imx-secure-image-base.bb) as the image base, keeping its read-only root filesystem and security packages. Machine and storage defaults are in [imx-secure.inc](conf/machine/include/imx-secure.inc).
-
-A [Docker](Dockerfile) build environment and [Jenkins](Jenkinsfile) pipeline are included for automated builds.
-
-### Build artifacts
-
-Artifacts are written to `build/tmp/deploy/images/<MACHINE>/`:
-
-| Artifact | Purpose |
-| --- | --- |
-| `imx-secure-image-base-<MACHINE>.rootfs.wic.gz` | Complete disk image |
-| `imx-secure-image-base-<MACHINE>.rootfs.wic.bmap` | Block map for flashing |
-| `imx-secure-image-base-<MACHINE>.rootfs.erofs.avbverity.gz` | Root filesystem with AVB metadata and verity data |
-| `imx-secure-image-base-<MACHINE>.rootfs.sbom-cve-check.spdx.json` | SPDX SBOM with CVE scan results, production builds only |
-| `fitImage` | Signed FIT containing Linux, the bundled initramfs and device trees |
-| `imx-boot*.sign` | Signed boot containers |
-| `imx-boot*.fuses/` | SPSDK SRK hashes and fuse scripts |
-
-Versioned image filenames include the security profile and Git version, for example `imx-secure-image-base-<MACHINE>.rootfs-prod_<VERSION>.wic.gz`.
-
-### Layer dependencies
+## Layer dependencies
 
 BSP layers are pinned to NXP `LF6.18.37_2.1.0`. Other repos follow Wrynose. See [kas-imx-secure.yml](kas-imx-secure.yml) for repository URLs and exact revisions.
 
@@ -316,10 +72,6 @@ BSP layers are pinned to NXP `LF6.18.37_2.1.0`. Other repos follow Wrynose. See 
 ## Commercial support
 
 Maintained by [Embetrix](https://embetrix.com) Embedded Systems Solutions. Contact [info@embetrix.com](mailto:info@embetrix.com) for custom development, board support, integration, provisioning, key management and maintenance.
-
-## License
-
-This layer is licensed under the [MIT License](COPYING.MIT). Included software keeps its own licenses.
 
 ## Disclaimer
 
