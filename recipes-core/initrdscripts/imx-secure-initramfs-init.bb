@@ -14,6 +14,7 @@ RDEPENDS:${PN}:append = " \
                 util-linux-mount \
                 util-linux-blkid \
                 util-linux-blockdev \
+                util-linux-blkdiscard \
                 e2fsprogs-mke2fs \
                 e2fsprogs-e2fsck \
                 dosfstools \
