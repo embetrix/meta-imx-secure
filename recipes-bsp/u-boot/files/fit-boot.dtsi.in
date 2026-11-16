@@ -3,6 +3,10 @@
 
 #include <generated/autoconf.h>
 
+#if @IMX_FIT_AHAB_ENABLE@ && (!defined(CONFIG_AHAB_BOOT) || !defined(CONFIG_ENV_IMPORT_FDT))
+#error AHAB FIT boot requires CONFIG_AHAB_BOOT and CONFIG_ENV_IMPORT_FDT
+#endif
+
 / {
 	config {
 #if defined(CONFIG_ENV_IMPORT_FDT) && (defined(CONFIG_AHAB_BOOT) || defined(CONFIG_SILENT_CONSOLE_UNTIL_ENV))
@@ -17,7 +21,12 @@
 		environment {
 #ifdef CONFIG_AHAB_BOOT
 			cntr_file = "fitImage";
+#if @IMX_FIT_AHAB_ENABLE@
+			fit_addr = "@IMX_FIT_AHAB_LOAD_ADDRESS@";
+			auth_os = "if auth_cntr ${cntr_addr}; then bootm ${fit_addr}; fi; reset";
+#else
 			auth_os = "bootm ${cntr_addr}; reset";
+#endif
 			loadbootscript = "false";
 #endif
 #ifdef CONFIG_SILENT_CONSOLE_UNTIL_ENV
