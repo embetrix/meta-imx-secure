@@ -106,6 +106,7 @@ LIBMOUNT_FORCE_MOUNT2=always mount -n --move "$SECDATA_MNT" "$ROOT_MNT$SECDATA_M
 
 # Mount data partition
 mount_dmcrypt_data "$DATA_DEV" "$DATA_DM_NAME" "data" "$ROOT_MNT$DATA_MNT" "$OPT_PART"
+watchdog_feed_stop
 
 fsck_quiet fsck.vfat -y -w "$BOOT_DEV" || klog "fsck on $BOOT_DEV returned $?"
 mount -t vfat -o $OPT_PART $BOOT_DEV "$ROOT_MNT$BOOT_MNT" \

@@ -149,7 +149,6 @@ setup_encrypted_rootfs() {
 			;;
 	esac
 	setup_dmcrypt "$UPDATE_DEV" "$UPDATE_DM_NAME"
-	watchdog_feed_stop
 }
 
 # Mount a data partition with plain dm-crypt encryption.
@@ -169,6 +168,7 @@ mount_dmcrypt_data() {
 	setup_dmcrypt "$dev" "$dm_name"
 
 	if ! blkid -s TYPE "/dev/mapper/$dm_name" >/dev/null 2>&1; then
+		[ -n "$WATCHDOG_PID" ] || watchdog_feed_start
 		fmt_start=$(date +%s)
 		klog "Creating ext4 filesystem on $dm_name..."
 		mkfs.ext4 -L "$label" "/dev/mapper/$dm_name" > /dev/null 2>&1 \
