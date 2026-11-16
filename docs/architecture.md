@@ -26,7 +26,7 @@ ELE ROM verifies the NXP-signed ELE firmware. ELE firmware handles AHAB authenti
 
 Early firmware and container contents vary by SoC. See [NXP's i.MX9 provisioning guide](https://mcuxpresso.nxp.com/secure/26.03/06_processor_specific_workflow.html#i-mx-9x-device-workflow) for the i.MX93 and i.MX95 image sets.
 
-Optional PQC signing covers the configured AHAB containers. Linux FIT signing remains separate.
+Optional PQC signing covers the configured AHAB containers.
 
 ## Initramfs workflow
 
