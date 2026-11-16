@@ -4,12 +4,46 @@
 #
 # Crypto helpers: plain dm-crypt with kernel keyring, rootfs encryption, data partition setup
 
+set_rootfs_crypt_state() {
+
+	fw_setenv rootfs_crypt "$1" \
+		|| fatal "cannot save rootfs encryption state: $1"
+	ROOTFS_CRYPT_STATE="$1"
+}
+
+# Read and validate the next encryption step
+get_rootfs_crypt_state() {
+
+	ROOTFS_CRYPT_STATE=$(fw_printenv -n rootfs_crypt) \
+		|| fatal "cannot read rootfs encryption state"
+	case "$ROOTFS_CRYPT_STATE" in
+		"")
+			# Existing keys need verification, never automatic replacement
+			if [ ! -e "$KMK_BLOB" ] && [ ! -e "$ENC_KEY_BLOB" ]; then
+				ROOTFS_CRYPT_STATE=prepare
+			fi
+			;;
+		prepare|copy|cleanup|done) ;;
+		*) fatal "unknown rootfs encryption state: $ROOTFS_CRYPT_STATE" ;;
+	esac
+
+	case "$ROOTFS_CRYPT_STATE" in
+		prepare|copy|cleanup)
+			# WIC puts the plaintext source in slot B
+			[ "$ROOT_DEV" = "/dev/${BASE_DEV}${SEP}${ROOT_SLOT_A}" ] \
+				|| fatal "rootfs encryption must finish in slot A"
+			;;
+	esac
+}
+
+# Usage: setup_encrypted_keys <new|load>
 setup_encrypted_keys() {
 
 	klog "Using OP-TEE trusted master key"
 
-	# Never replace existing keys when a blob is missing or empty
-	if [ ! -e "$KMK_BLOB" ] && [ ! -e "$ENC_KEY_BLOB" ]; then
+	if [ "$1" = new ]; then
+		# No encrypted data exists yet, so interrupted key creation can restart
+		rm -f "$KMK_BLOB" "$ENC_KEY_BLOB" || fatal "cannot remove unfinished keys"
 		kmk_id=$(keyctl add trusted kmk "new ${KEY_SZ}" @u) \
 			|| fatal "cannot create OP-TEE KMK"
 		keyctl pipe "$kmk_id" > "$KMK_BLOB" \
@@ -48,39 +82,73 @@ setup_dmcrypt() {
 	dmsetup mknodes "$dm_name"
 }
 
-#############################################################################
-# Encrypt rootfs on first boot using the update partition.
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# WARNING: This operation is NOT power-safe
-# Power loss mid-migration can leave both root partitions unrecoverable
-# should ideally be performed during manufacturing or
-# initial provisioning and not in the field
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Flow:
-#   Open root as plain dm-crypt, copy rootfs from update into it,
-#   then open update as plain dm-crypt.
-#############################################################################
+# Copy and flush the entire image through dm-crypt
+# Usage: encrypt_rootfs <source_device> <dm_name>
 encrypt_rootfs() {
 
-	root_dm="$1"
-	update_dev="$2"
-	update_dm="$3"
-
-	klog "First-boot rootfs encryption: migrating plain rootfs to dm-crypt..."
 	enc_start=$(date +%s)
-
-	# Copy the entire AVB image (filesystem + hashtree + footer)
-	# from the update partition into the dm-crypt container.
-	klog "Copying image from $update_dev to encrypted root volume..."
-	dd if="$update_dev" of="/dev/mapper/$root_dm" bs=1M 2>/dev/null
-	sync
-
-	# Note: blkdiscard is not supported on all block devices (e.g. SD cards)
-	blkdiscard -sf "$update_dev" 2>/dev/null || true
-	setup_dmcrypt "$update_dev" "$update_dm"
-
+	klog "Copying $1 to encrypted root volume..."
+	dd if="$1" of="/dev/mapper/$2" bs=1M conv=fsync \
+		|| fatal "rootfs encryption copy failed"
 	enc_end=$(date +%s)
-	klog "Rootfs encryption complete in $((enc_end - enc_start))s"
+	klog "Rootfs copy completed in $((enc_end - enc_start))s"
+}
+
+# Resume rootfs encryption, verify it and finish source cleanup
+setup_encrypted_rootfs() {
+
+	get_rootfs_crypt_state
+
+	case "$ROOTFS_CRYPT_STATE" in
+		prepare|copy|cleanup) watchdog_feed_start ;;
+	esac
+
+	# Prepare new keys or load the saved pair
+	case "$ROOTFS_CRYPT_STATE" in
+		prepare)
+			verify_avb "$UPDATE_DEV"
+			set_rootfs_crypt_state prepare
+			setup_encrypted_keys new
+			# Keys are flushed and must stay unchanged once copying can start
+			set_rootfs_crypt_state copy
+			;;
+		copy)
+			verify_avb "$UPDATE_DEV"
+			setup_encrypted_keys load
+			;;
+		cleanup|done|"")
+			setup_encrypted_keys load
+			;;
+	esac
+	keyctl link @us @s || fatal "cannot link storage keys to the session keyring"
+	setup_dmcrypt "$ROOT_DEV" "$ROOT_DM_NAME"
+
+	# Keep the source intact until the encrypted root passes verification
+	case "$ROOTFS_CRYPT_STATE" in
+		copy)
+			encrypt_rootfs "$UPDATE_DEV" "$ROOT_DM_NAME"
+			setup_avb_verity "$ROOT_DM_NAME" "$VERITY_DM_NAME"
+			set_rootfs_crypt_state cleanup
+			;;
+		cleanup|done|"")
+			setup_avb_verity "$ROOT_DM_NAME" "$VERITY_DM_NAME"
+			;;
+	esac
+
+	case "$ROOTFS_CRYPT_STATE" in
+		cleanup)
+			# After this point slot B can no longer be used as a copy source
+			blkdiscard -sf "$UPDATE_DEV" 2>/dev/null \
+				|| klog "Secure discard failed or unsupported on $UPDATE_DEV"
+			set_rootfs_crypt_state done
+			;;
+		done) ;;
+		"")
+			# Keep the inactive slot when adopting an existing encrypted installation
+			set_rootfs_crypt_state done
+			;;
+	esac
+	setup_dmcrypt "$UPDATE_DEV" "$UPDATE_DM_NAME"
 }
 
 # Mount a data partition with plain dm-crypt encryption.
@@ -100,6 +168,7 @@ mount_dmcrypt_data() {
 	setup_dmcrypt "$dev" "$dm_name"
 
 	if ! blkid -s TYPE "/dev/mapper/$dm_name" >/dev/null 2>&1; then
+		[ -n "$WATCHDOG_PID" ] || watchdog_feed_start
 		fmt_start=$(date +%s)
 		klog "Creating ext4 filesystem on $dm_name..."
 		mkfs.ext4 -L "$label" "/dev/mapper/$dm_name" > /dev/null 2>&1 \

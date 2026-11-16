@@ -12,21 +12,26 @@ setup_evm_integrity() {
 	    || fatal "Failed to enable EVM signature verification"
 }
 
-# Verify AVB signature and set up dm-verity on the decrypted root device.
-# The AVB footer (with hashtree) lives inside the dmcrypt container.
-# Usage: setup_avb_verity <dmcrypt_name> <dmverity_name>
-setup_avb_verity() {
-
-	dev="/dev/mapper/$1"
-	verity_name="$2"
+# Verify AVB metadata and save the dm-verity table in dm_table
+# Usage: verify_avb <device>
+verify_avb() {
 
 	if [ ! -f "$AVB_PUBKEY" ]; then
 		fatal "AVB public key not found at $AVB_PUBKEY"
 	fi
 
-	klog "Verifying AVB signature on $dev..."
-	dm_table=$(avb_verify --dm-table -d "$dev" -k "$AVB_PUBKEY") \
-		|| fatal "AVB verification failed on $dev"
+	klog "Verifying AVB signature on $1..."
+	dm_table=$(avb_verify --dm-table -d "$1" -k "$AVB_PUBKEY") \
+		|| fatal "AVB verification failed on $1"
+}
+
+# Verify AVB metadata and set up dm-verity on the decrypted root device
+# Usage: setup_avb_verity <dmcrypt_name> <dmverity_name>
+setup_avb_verity() {
+
+	dev="/dev/mapper/$1"
+	verity_name="$2"
+	verify_avb "$dev"
 
 	# Apply dm-verity corruption behavior from kernel cmdline
 	case " $(cat /proc/cmdline) " in

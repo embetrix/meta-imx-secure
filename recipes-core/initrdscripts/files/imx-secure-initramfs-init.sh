@@ -3,13 +3,12 @@
 # Copyright 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
 # imx secure initramfs init script:
-#   mount_early_fs      - Mount devtmpfs, tmpfs, proc, sysfs, securityfs
-#   setup_slot_devices - Select slot devices from the kernel command line
-#   encrypt_rootfs      - First-boot rootfs encryption (plain to dm-crypt)
-#   setup_avb_verity    - AVB signature verification and dm-verity setup
-#   mount_dmcrypt_data  - First-boot data partitions encryption
-#   setup_evm_integrity - Setup EVM mode
-#   switch_root         - Switch to the real root filesystem
+#   mount_early_fs         - Mount devtmpfs, tmpfs, proc, sysfs, securityfs
+#   setup_slot_devices     - Select slot devices from the kernel command line
+#   setup_encrypted_rootfs - Prepare and verify the encrypted root filesystem
+#   mount_dmcrypt_data     - First-boot data partitions encryption
+#   setup_evm_integrity    - Setup EVM mode
+#   switch_root            - Switch to the real root filesystem
 #
 
 #set -x
@@ -27,6 +26,7 @@ ROOT_DM_NAME="root"
 UPDATE_DM_NAME="update"
 DATA_DM_NAME="data"
 VERITY_DM_NAME="verity-root"
+ROOT_BLOCK_DEV="/dev/mapper/$VERITY_DM_NAME"
 
 ROOT_MNT="/root"
 BOOT_MNT="/boot"
@@ -92,29 +92,7 @@ mount -t ext4 -o $OPT_PART $SECDATA_DEV "$SECDATA_MNT" \
 	|| fatal "cannot mount secdata device $SECDATA_DEV"
 mkdir -p "$SECDATA_MNT/keys" || fatal "cannot create key directory"
 
-# Set up encrypted keys in kernel keyring
-setup_encrypted_keys
-
-# dm-crypt uses request_key() which searches the session keyring,
-# not the user keyring where the keys were added
-keyctl link @us @s
-
-# Always open root as dm-crypt first.
-# First boot : decrypted content is garbage (no rootfs yet) will lead to blkid fails
-# Normal boot: decrypted content is valid erofs+AVB will lead to blkid succeess
-setup_dmcrypt "$ROOT_DEV" "$ROOT_DM_NAME"
-
-if ! blkid -s TYPE "/dev/mapper/$ROOT_DM_NAME" >/dev/null 2>&1; then
-	watchdog_feed_start
-	encrypt_rootfs "$ROOT_DM_NAME" "$UPDATE_DEV" "$UPDATE_DM_NAME"
-	watchdog_feed_stop
-else
-	setup_dmcrypt "$UPDATE_DEV" "$UPDATE_DM_NAME"
-fi
-
-# Set up dm-verity on the decrypted root device
-setup_avb_verity "$ROOT_DM_NAME" "$VERITY_DM_NAME"
-ROOT_BLOCK_DEV="/dev/mapper/$VERITY_DM_NAME"
+setup_encrypted_rootfs
 
 mkdir -p "$ROOT_MNT"
 # Mount encrypted root filesystem
@@ -128,6 +106,7 @@ LIBMOUNT_FORCE_MOUNT2=always mount -n --move "$SECDATA_MNT" "$ROOT_MNT$SECDATA_M
 
 # Mount data partition
 mount_dmcrypt_data "$DATA_DEV" "$DATA_DM_NAME" "data" "$ROOT_MNT$DATA_MNT" "$OPT_PART"
+watchdog_feed_stop
 
 fsck_quiet fsck.vfat -y -w "$BOOT_DEV" || klog "fsck on $BOOT_DEV returned $?"
 mount -t vfat -o $OPT_PART $BOOT_DEV "$ROOT_MNT$BOOT_MNT" \
