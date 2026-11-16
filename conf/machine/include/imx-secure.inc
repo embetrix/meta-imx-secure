@@ -27,9 +27,11 @@ UBOOT_SIGN_KEYNAME ?= "fit"
 FIT_SIGN_ALG ?= "rsa2048"
 FIT_SIGN_INDIVIDUAL = "0"
 
-# Optional AHAB wrapper for the signed FIT
-# Needs U-Boot to authenticate and unwrap the container before booting the FIT
-IMX_FIT_AHAB_ENABLE ?= "0"
+# AHAB wrapper for the signed FIT
+# U-Boot authenticates the container before booting the extracted FIT
+# Enable by default when boot signing and a destination address are configured
+IMX_FIT_AHAB_ENABLE ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', \
+    '1' if d.getVar('IMX_FIT_AHAB_LOAD_ADDRESS') else '0', '0', d)}"
 
 # AHAB FIT destination addresses
 IMX_FIT_AHAB_LOAD_ADDRESS:mx8qm-generic-bsp  ?= "0x90000000"
