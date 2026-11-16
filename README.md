@@ -100,8 +100,6 @@ Replace `/dev/sdX` with the **whole SD card device**. This overwrites its conten
 
 On first boot, the initramfs creates the storage keys, copies the plaintext root filesystem from slot B into encrypted slot A and formats the encrypted data volume. This takes longer than later boots.
 
-**Keep power connected during first-boot initialization. The migration is not resilient to power loss.**
-
 ### 6. Login and SSH
 
 Default accounts for development login:
