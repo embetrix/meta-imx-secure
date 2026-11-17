@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 OPENSSL_PKCS11_MODULE = "${@bb.utils.contains('OPENSSL_PKCS11_DEFAULT_PROVIDER', 'optee', 'libckteec.so.0', 'libsmw_pkcs11.so.5', d)}"
 OPENSSL_PKCS11_PACKAGE = "${@bb.utils.contains('OPENSSL_PKCS11_DEFAULT_PROVIDER', 'optee', 'optee-client', 'smw', d)}"

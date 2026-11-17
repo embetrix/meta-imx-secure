@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 # Disable the UART console and debug output in production builds
 SRC_URI:append = " ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://0001-imx-disable-uart-console.patch', '', d)}"
