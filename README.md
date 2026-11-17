@@ -13,8 +13,8 @@ A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and veri
 | Storage | Encrypted read-only root filesystem, AVB metadata verification, dm-verity with forward error correction (FEC) and encrypted writable data |
 | Key protection | OP-TEE-backed kernel encrypted keys plus EdgeLock Enclave cryptography and persistent key storage |
 | Runtime protection | IMA/EVM integrity checks and kernel and userspace hardening |
-| Access control | nftables firewall, OpenSSH CA authentication, USBGuard and audit logging |
-| Cryptographic integration | OpenSSL integration through PKCS#11 using OP-TEE or NXP Security Middleware (SMW), OP-TEE PQC (experimental) |
+| Access control | SELinux, nftables firewall, OpenSSH CA authentication, USBGuard and audit logging |
+| Cryptographic integration | OpenSSL integration through PKCS#11 using OP-TEE or NXP Security Middleware (SMW), OP-TEE ftpm, OP-TEE PQC (experimental) |
 | Build and integration | Development and production profiles, A/B boot and root filesystem layout, CVE scanning and SPDX SBOM generation |
 | OTA updates | A/B updates with optional signed and encrypted SWUpdate bundles |
 
