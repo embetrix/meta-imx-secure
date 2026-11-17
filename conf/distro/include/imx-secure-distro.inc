@@ -9,6 +9,9 @@ DISTRO_VERSION = "${IMX_SECURE_VERSION}"
 
 DISTRO_FEATURES += "polkit ima integrity security"
 
+# Use journald instead of a separate syslog daemon
+VIRTUAL-RUNTIME_base-utils-syslog = ""
+
 # Development and production profiles
 IMX_SECURITY_PROFILE ??= "dev"
 INHERIT += "imx-security-profile"
