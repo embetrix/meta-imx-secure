@@ -40,6 +40,9 @@ require ${@bb.utils.contains('BBFILE_COLLECTIONS', 'selinux', 'dynamic-layers/se
 # Enable swupdate bundles when meta-swupdate is present
 require ${@bb.utils.contains('BBFILE_COLLECTIONS', 'swupdate', 'dynamic-layers/swupdate/conf/distro/include/imx-secure-swupdate.inc', '', d)}
 
+# Enable optional TPM userspace support when meta-tpm is present
+require ${@bb.utils.contains('BBFILE_COLLECTIONS', 'tpm-layer', 'dynamic-layers/tpm/conf/distro/include/imx-secure-tpm.inc', '', d)}
+
 # CVE checks conditional on security profile
 IMAGE_CLASSES += "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'sbom-cve-check', '', d)}"
 require conf/distro/include/cve-extra-exclusions.inc
