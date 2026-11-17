@@ -11,4 +11,6 @@ do_install:append:class-target() {
     ln -sf /dev/null ${D}${sysconfdir}/u-boot-initial-env
 }
 
-FILES:${PN}-bin:append = " ${sysconfdir}/fw_env.config ${sysconfdir}/u-boot-initial-env"
+PACKAGES:prepend:class-target = "${PN}-config "
+FILES:${PN}-config:class-target = "${sysconfdir}/fw_env.config ${sysconfdir}/u-boot-initial-env"
+RDEPENDS:${PN}-bin:append:class-target = " ${PN}-config"
