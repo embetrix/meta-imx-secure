@@ -78,17 +78,17 @@ software = {
             encrypted = true;
             sha256 = "$swupdate_get_sha256(@@IMX_BOOTLOADER@@)";
         },
-        /* dev security profile builds may reuse SW_VERSION so the ROM may keep the same slot
-         * Update the active firmware copy too so either slot loads the new imx-boot
-         * Disabled in prod which updates only the inactive firmware copy
+        /* dev builds may reuse SW_VERSION so the ROM may keep the same slot
+         * Invalidate the active firmware after writing the inactive copy
+         * Disabled in prod which keeps the active firmware for fallback
          */
         {
-            filename = "@@IMX_BOOTLOADER@@";
+            filename = "imx-boot-zeros";
             device = "/dev/bootdev";
             type = "raw";
             hook = "set_active_boot_offset";
             encrypted = true;
-            sha256 = "$swupdate_get_sha256(@@IMX_BOOTLOADER@@)";
+            sha256 = "$swupdate_get_sha256(imx-boot-zeros)";
         }
     );
 

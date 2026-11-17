@@ -42,6 +42,17 @@ python imx_check_swu_bootloader() {
                  (filename, size, limit))
 }
 
+python do_swuimage:prepend() {
+    import os
+
+    artifacts = d.getVar('SWUPDATE_ARTIFACTS_DIR')
+    bb.utils.mkdirhier(artifacts)
+    # Generate after task cleanup so the payload survives until packaging
+    # Clear the whole firmware area, including headers from older images
+    with open(os.path.join(artifacts, 'imx-boot-zeros'), 'wb') as stream:
+        stream.truncate(int(d.getVar('IMX_BOOT_MAX_SIZE'), 0))
+}
+
 do_swuimage[prefuncs] += "imx_check_swu_keys imx_check_swu_bootloader"
 do_swuimage[depends] += "linux-yocto-fitimage:do_deploy imx-boot:do_deploy"
 do_swuimage[file-checksums] += "${@imx_swupdate_key_checksums(d, private=True)}"
