@@ -31,6 +31,9 @@ require conf/machine/include/imx-secure.inc
 INHERIT += "ima-evm-rootfs"
 IMAGE_CLASSES += "avb-verity"
 
+# Enable SELinux integration when meta-selinux is present
+require ${@bb.utils.contains('BBFILE_COLLECTIONS', 'selinux', 'dynamic-layers/selinux/conf/distro/include/imx-secure-selinux.inc', '', d)}
+
 # CVE checks conditional on security profile
 IMAGE_CLASSES += "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'sbom-cve-check', '', d)}"
 require conf/distro/include/cve-extra-exclusions.inc

@@ -26,4 +26,5 @@ IMAGE_INSTALL += " \
     packagegroup-security-base \
     ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'packagegroup-dev', '', d)}         \
     ${@bb.utils.contains('DISTRO_FEATURES', 'ima', 'packagegroup-ima', '', d)}              \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'packagegroup-selinux', '', d)}      \
 "
