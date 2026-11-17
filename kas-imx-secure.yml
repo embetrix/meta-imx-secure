@@ -8,7 +8,9 @@ header:
 
 machine: imx95-15x15-lpddr4x-frdm
 distro: imx-secure
-target: imx-secure-image-base
+target:
+  - imx-secure-image-base
+  - imx-secure-image-base-update
 
 repos:
   meta-imx-secure:
@@ -79,6 +81,11 @@ repos:
     url: https://git.yoctoproject.org/git/meta-selinux.git
     branch: wrynose
     path: layers/meta-selinux
+
+  meta-swupdate:
+    url: https://github.com/sbabic/meta-swupdate.git
+    branch: wrynose
+    path: layers/meta-swupdate
 
 env:
   SECURITY_PROFILE: "dev"
