@@ -62,6 +62,7 @@ SECDATA_PART=5
 DATA_PART=6
 
 TIMEOUT=10
+BOOTLIMIT=3
 
 AVB_PUBKEY="/etc/avb/avb_pubkey.bin"
 

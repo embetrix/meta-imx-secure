@@ -5,6 +5,38 @@
 # U-Boot sets root= and boot_slot= on the kernel command line
 # Use root= to find the disk and boot_slot= to select its A/B partitions
 
+rollback() {
+
+	klog "Rollback not implemented"
+}
+
+check_boot_attempts() {
+
+	upgrade_available=$(fw_printenv -n upgrade_available) \
+		|| fatal "cannot read pending update state"
+	[ "$upgrade_available" = "1" ] || return 0
+
+	bootcount=$(fw_printenv -n bootcount) \
+		|| fatal "cannot read update boot count"
+	bootcount=${bootcount:-0}
+	case "$bootcount" in
+		*[!0-9]*) fatal "invalid update boot count: $bootcount" ;;
+	esac
+	# Strip leading zeros before shell arithmetic
+	bootcount=$(printf '%s' "$bootcount" | sed 's/^0*//')
+	bootcount=${bootcount:-0}
+	if [ "$bootcount" -lt "$BOOTLIMIT" ]; then
+		bootcount=$((bootcount + 1))
+		fw_setenv bootcount "$bootcount" \
+			|| fatal "cannot save update boot count"
+	fi
+	klog "Pending update boot attempt: $bootcount"
+	if [ "$bootcount" -ge "$BOOTLIMIT" ]; then
+		klog "Update boot limit reached ($bootcount/$BOOTLIMIT)"
+		rollback
+	fi
+}
+
 setup_slot_devices() {
 
 	# Use the last root= argument, as the kernel does
@@ -81,6 +113,8 @@ setup_slot_devices() {
 
 	ln -sf "/dev/$BASE_DEV" /dev/bootdev \
 		|| fatal "cannot create boot device link"
+
+	check_boot_attempts
 
 	if [ -n "$boot_slot_arg" ]; then
 		fw_boot_slot=$(fw_printenv -n boot_slot) \

@@ -104,13 +104,12 @@ software = {
 
     bootenv: (
         {
-            name = "upgrade_available";
-            value = "1";
+            name = "bootcount";
+            value = "0";
         },
         {
-            name = "update_target_slot";
-            value = "x"; /* Set by the hook */
-            hook = "set_target_slot";
+            name = "upgrade_available";
+            value = "1";
         },
         {
             name = "boot_slot";
