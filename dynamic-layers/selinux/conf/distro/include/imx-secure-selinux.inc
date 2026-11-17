@@ -9,5 +9,5 @@ PREFERRED_PROVIDER_virtual/refpolicy = "refpolicy-mls"
 IMAGE_CLASSES += "${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'selinux-image selinux-image-order', '', d)}"
 IMAGE_CLASSES += "${@bb.utils.contains('DISTRO_FEATURES', 'selinux ima', 'ima-evm-rootfs-extra', '', d)}"
 
-# Match the Raspberry Pi layer until the board policy is ready for enforcement
+# Match the i.MX secure layer until the board policy is ready for enforcement
 DEFAULT_ENFORCING ?= "permissive"
