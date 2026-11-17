@@ -81,4 +81,17 @@ setup_slot_devices() {
 
 	ln -sf "/dev/$BASE_DEV" /dev/bootdev \
 		|| fatal "cannot create boot device link"
+
+	if [ -n "$boot_slot_arg" ]; then
+		fw_boot_slot=$(fw_printenv -n boot_slot) \
+			|| fatal "cannot read boot slot from firmware environment"
+		case "$fw_boot_slot" in
+			"") ;; # Fresh images have no stored boot slot
+			a|b)
+				[ "$fw_boot_slot" = "${boot_slot_arg#boot_slot=}" ] \
+					|| fatal "boot slot mismatch: cmdline=${boot_slot_arg#boot_slot=} fwenv=$fw_boot_slot"
+				;;
+			*) fatal "invalid boot slot in firmware environment: $fw_boot_slot" ;;
+		esac
+	fi
 }
