@@ -7,6 +7,8 @@ software = {
     hardware-compatibility: [ "@@MACHINE@@" ];
 
     embedded-script = "
+        local swupdate = require('swupdate')
+
         local function target_slot()
             local f = assert(io.open('/sys/firmware/devicetree/base/chosen/bootargs', 'rb'))
             local bootargs = assert(f:read('*a')):gsub('%z+$', '')
@@ -17,6 +19,7 @@ software = {
                     slot = arg:sub(11)
                 end
             end
+            swupdate.trace('slot hook: profile=@@IMX_SECURITY_PROFILE@@ boot_slot=' .. tostring(slot))
             if slot == 'a' then
                 return 'b'
             elseif slot == 'b' then
@@ -27,21 +30,26 @@ software = {
         end
 
         function set_boot_offset(image)
-            if target_slot() == 'b' then
+            local target = target_slot()
+            if target == 'b' then
                 image.offset = @@IMX_BOOT_SECONDARY_OFFSET@@
             else
                 image.offset = @@IMX_BOOT_SEEK@@ * 1024
             end
+            swupdate.trace(string.format('slot hook: select %s device=%s offset=0x%x target=%s',
+                image.filename, image.device, image.offset, target))
             return true, image
         end
 
         function set_target_slot(image)
             image.version = target_slot()
+            swupdate.trace('slot hook: bootenv ' .. image.name .. '=' .. image.version)
             return true, image
         end
 
         function set_active_boot_offset(image)
             if '@@IMX_SECURITY_PROFILE@@' ~= 'dev' then
+                swupdate.trace('slot hook: skip imx-boot-zeros profile=@@IMX_SECURITY_PROFILE@@')
                 return true, nil
             end
             if target_slot() == 'b' then
@@ -49,6 +57,8 @@ software = {
             else
                 image.offset = @@IMX_BOOT_SECONDARY_OFFSET@@
             end
+            swupdate.trace(string.format('slot hook: select imx-boot-zeros device=%s offset=0x%x size=@@IMX_BOOT_MAX_SIZE@@ encrypted=%s',
+                image.device, image.offset, tostring(image.encrypted)))
             return true, image
         end
     ";
