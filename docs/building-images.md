@@ -14,7 +14,7 @@ Install `kas`, `openssl`, `ssh-keygen` and the host dependencies required by the
 tools/generate-signing-keys.sh
 ```
 
-The helper creates AHAB, FIT, kernel module, IMA/EVM, AVB and SSH CA keys under `imx-secure-keys/`. It generates `kas-signing-keys.yml` with the signing settings and absolute key paths. Existing keys are checked and reused.
+The helper creates AHAB, FIT, kernel module, IMA/EVM, AVB, SSH CA and SWUpdate keys under `imx-secure-keys/`. It generates `kas-signing-keys.yml` with the signing settings and absolute key paths. Existing keys are checked and reused.
 
 Keep private keys secure and maintain an offline backup. Run the helper again if you move the checkout or key directory to update the generated paths.
 
@@ -32,6 +32,8 @@ Choose a `MACHINE` from the [tested boards](../README.md#tested-hardware). Use t
 Both profiles include storage encryption, root filesystem verification and enforced runtime integrity checks. Use development images only on an isolated test network.
 
 ## 4. Build
+
+> **Note:**  Read the [NXP/Freescale EULA](https://raw.githubusercontent.com/Freescale/meta-freescale/refs/heads/wrynose/EULA) before building. The kas configuration sets `ACCEPT_FSL_EULA = "1"`. Building with this configuration means you accept the EULA terms.
 
 Replace `<MACHINE>` with a machine name from [Supported hardware](../README.md#supported-hardware):
 

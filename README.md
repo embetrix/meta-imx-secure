@@ -16,6 +16,7 @@ A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and veri
 | Access control | nftables firewall, OpenSSH CA authentication, USBGuard and audit logging |
 | Cryptographic integration | OpenSSL integration through PKCS#11 using OP-TEE or NXP Security Middleware (SMW), OP-TEE PQC (experimental) |
 | Build and integration | Development and production profiles, A/B boot and root filesystem layout, CVE scanning and SPDX SBOM generation |
+| OTA updates | A/B updates with optional signed and encrypted SWUpdate bundles |
 
 These features support [Cyber Resilience Act (CRA)](https://digital-strategy.ec.europa.eu/en/policies/cra-manufacturers) readiness. Compliance depends on the finished product and its maintenance processes.
 
@@ -52,7 +53,7 @@ Open a pull request to add a tested board.
 | [Device setup](docs/device-setup.md) | SD card flashing, development login and SSH certificates |
 | [Security architecture](docs/architecture.md) | Boot authentication, initramfs and partition layout |
 | [AHAB provisioning](docs/ahab-provisioning.md) | SRK fuse scripts, programming and verification |
-| [OTA update integration](docs/ota-updates.md) | A/B slots, boot firmware selection and update-agent responsibilities |
+| [OTA update integration](docs/ota-updates.md) | SWUpdate bundles, A/B slots and boot firmware selection |
 | [Layer integration](docs/layer-integration.md) | Adding the layer to an existing Yocto build |
 
 ## Layer dependencies
@@ -66,6 +67,7 @@ BSP layers are pinned to NXP `LF6.18.37_2.1.0`. Other repos follow Wrynose. See 
 | [meta-avb](https://github.com/embetrix/meta-avb/tree/wrynose) | `wrynose` | meta-avb |
 | [meta-security](https://git.yoctoproject.org/meta-security/tree/?h=wrynose) | `wrynose` | meta-security and meta-integrity |
 | [meta-selinux](https://git.yoctoproject.org/meta-selinux/tree/?h=wrynose) | `wrynose` | meta-selinux (optional) |
+| [meta-swupdate](https://github.com/sbabic/meta-swupdate/tree/wrynose) | `wrynose` | meta-swupdate (optional)  |
 | [meta-arm](https://git.yoctoproject.org/meta-arm/tree/?h=wrynose) | `wrynose` | meta-arm and meta-arm-toolchain |
 | [meta-freescale](https://github.com/Freescale/meta-freescale/tree/wrynose) | `wrynose` | meta-freescale |
 | [meta-imx](https://github.com/nxp-imx/meta-imx/tree/wrynose-6.18.37-2.1.0) | `wrynose-6.18.37-2.1.0` | meta-imx-bsp |
