@@ -1,0 +1,83 @@
+/* SPDX-License-Identifier: MIT
+ * Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+ */
+
+software = {
+    version = "@@IMX_SECURE_VERSION@@";
+    hardware-compatibility: [ "@@MACHINE@@" ];
+
+    embedded-script = "
+        local function target_slot()
+            local f = assert(io.open('/sys/firmware/devicetree/base/chosen/bootargs', 'rb'))
+            local bootargs = assert(f:read('*a')):gsub('%z+$', '')
+            f:close()
+            local slot
+            for arg in bootargs:gmatch('%S+') do
+                if arg:match('^boot_slot=') then
+                    slot = arg:sub(11)
+                end
+            end
+            if slot == 'a' then
+                return 'B'
+            elseif slot == 'b' then
+                return 'A'
+            else
+                error('Missing or invalid boot_slot in device tree bootargs')
+            end
+        end
+
+        function set_boot_offset(image)
+            if target_slot() == 'B' then
+                image.offset = @@IMX_BOOT_SECONDARY_OFFSET@@
+            else
+                image.offset = @@IMX_BOOT_SEEK@@ * 1024
+            end
+            return true, image
+        end
+
+        function set_target_slot(image)
+            image.version = target_slot()
+            return true, image
+        end
+    ";
+
+    /* Keep boot firmware last so the FIT and rootfs are installed first */
+    images: (
+        {
+            filename = "fitImage";
+            path = "/var/boot-update/fitImage";
+            type = "rawfile";
+            encrypted = true;
+            sha256 = "$swupdate_get_sha256(fitImage)";
+        },
+        {
+            filename = "@@IMAGE@@-@@MACHINE@@.rootfs.@@ROOTFS_TYPE@@.avbverity.gz";
+            device = "/dev/mapper/update";
+            type = "raw";
+            compressed = "zlib";
+            encrypted = true;
+            sha256 = "$swupdate_get_sha256(@@IMAGE@@-@@MACHINE@@.rootfs.@@ROOTFS_TYPE@@.avbverity.gz)";
+        },
+        {
+            filename = "@@IMX_BOOTLOADER@@";
+            device = "/dev/bootdev";
+            type = "raw";
+            hook = "set_boot_offset";
+            encrypted = true;
+            sha256 = "$swupdate_get_sha256(@@IMX_BOOTLOADER@@)";
+        }
+    );
+
+    bootenv: (
+        {
+            name = "upgrade_available";
+            value = "1";
+        },
+        {
+            name = "update_target_slot";
+            value = "X"; /* Set by the hook */
+            hook = "set_target_slot";
+        }
+    );
+
+};
