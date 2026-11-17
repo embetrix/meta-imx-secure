@@ -23,6 +23,7 @@ SRC_URI += " \
             file://crypto.cfg \
             file://rpmb.cfg \
             file://kmod-sign.cfg \
+            ${@bb.utils.contains('MACHINE_FEATURES', 'optee-ftpm', 'file://optee-ftpm.cfg', '', d)} \
             ${@bb.utils.contains('DISTRO_FEATURES', 'ima', 'file://ima-evm.cfg', '', d)} \
             ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'file://security-harden.cfg', '', d)} \
             "
