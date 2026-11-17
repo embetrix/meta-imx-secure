@@ -104,6 +104,10 @@ software = {
 
     bootenv: (
         {
+            name = "rollback_slot";
+            value = ""; /* Clear the previous rollback when installing a new update */
+        },
+        {
             name = "bootcount";
             value = "0";
         },
