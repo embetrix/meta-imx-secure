@@ -13,6 +13,9 @@ IMX_SECURE_ENCLAVE_PACKAGES:mx91-nxp-bsp = "imx-secure-enclave"
 IMX_SECURE_ENCLAVE_PACKAGES:mx93-nxp-bsp = "imx-secure-enclave"
 IMX_SECURE_ENCLAVE_PACKAGES:mx95-nxp-bsp = "imx-secure-enclave imx-secure-enclave-seco"
 
+# Enable optee-ftpm
+MACHINE_FEATURES:append = " optee-ftpm"
+
 MACHINE_EXTRA_RDEPENDS:append = " \
     ${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'optee-client optee-os smw', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'optee', \
