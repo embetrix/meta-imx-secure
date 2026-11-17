@@ -26,3 +26,21 @@ Keep each firmware copy aligned with its matching FIT and root filesystem slot. 
 See [build artifacts](building-images.md#build-artifacts) for the files produced by the build.
 
 Optional SWUpdate support provides CMS-signed, AES-encrypted `.swu` bundles through `imx-secure-image-base-update`. Install a bundle with `swupdate-client /path/to/imx-secure-image-base-update.swu`.
+
+## OTA update workflow
+
+```mermaid
+flowchart TD
+    BUNDLE["Decrypt and verify update bundle"] --> INSTALL["Install FIT, root filesystem and imx-boot<br/>in the inactive slot"]
+    INSTALL --> PENDING["Mark update pending<br/>Reset boot count"]
+    PENDING --> BOOT["Reboot into updated slot"]
+    BOOT --> CHECK["Count boot attempt in initramfs"]
+    CHECK -->|Boot limit not reached| HEALTH{"Userspace health checks pass?"}
+    HEALTH -->|Yes| CONFIRM["Confirm update<br/>Clear pending state and boot count"]
+    HEALTH -->|No| WAIT["Leave update pending"]
+    WAIT -.->|On the next reboot| CHECK
+    CHECK -->|Boot limit reached| ROLLBACK["Attempt rollback to the previous slot"]
+    ROLLBACK --> REPORT["Invalidate failed firmware and reboot<br/>Report rollback in userspace"]
+```
+
+Rollback needs a remaining fallback firmware copy. Development updates invalidate the old copy to allow reused software versions. Production updates keep it for fallback.
