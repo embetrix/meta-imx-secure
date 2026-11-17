@@ -60,6 +60,10 @@ INITRAMFS_IMAGE_BUNDLE  = "1"
 # Boot image and disk layout
 IMX_BOOTLOADER ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', \
     'imx-boot.tagged.sign', 'imx-boot.tagged', d)}"
+# Byte offset of the second boot firmware copy
+IMX_BOOT_SECONDARY_OFFSET ?= "0x400000"
+# Maximum boot firmware size: 4,161,536 bytes (4 MiB minus 32 KiB)
+IMX_BOOT_MAX_SIZE ?= "0x3f8000"
 WKS_FILE = "imx-boot-secure-bootpart.wks.in"
 
 # Keep BSP additions out of the active boot partition

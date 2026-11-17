@@ -24,3 +24,5 @@ i.MX ROM selects between redundant boot firmware image sets using container soft
 Keep each firmware copy aligned with its matching FIT and root filesystem slot. The WIC image writes only the first firmware copy, so the update or provisioning process must populate the second copy. See [Partition layout](architecture.md#partition-layout) for the default locations.
 
 See [build artifacts](building-images.md#build-artifacts) for the files produced by the build.
+
+Optional SWUpdate support provides CMS-signed, AES-encrypted `.swu` bundles through `imx-secure-image-base-update`. Install a bundle with `swupdate-client /path/to/imx-secure-image-base-update.swu`.

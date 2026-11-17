@@ -62,6 +62,12 @@ SECDATA_PART=5
 DATA_PART=6
 
 TIMEOUT=10
+BOOTLIMIT=3
+
+# Firmware offsets and size in bytes, filled from the machine configuration
+IMX_BOOT_A_OFFSET=$((__IMX_BOOT_SEEK__ * 1024))
+IMX_BOOT_B_OFFSET=$((__IMX_BOOT_SECONDARY_OFFSET__))
+IMX_BOOT_MAX_SIZE=$((__IMX_BOOT_MAX_SIZE__))
 
 AVB_PUBKEY="/etc/avb/avb_pubkey.bin"
 

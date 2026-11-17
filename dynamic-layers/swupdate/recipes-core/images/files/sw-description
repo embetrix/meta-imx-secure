@@ -1,0 +1,125 @@
+/* SPDX-License-Identifier: MIT
+ * Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+ */
+
+software = {
+    version = "@@IMX_SECURE_VERSION@@";
+    hardware-compatibility: [ "@@MACHINE@@" ];
+
+    embedded-script = "
+        local swupdate = require('swupdate')
+
+        local function target_slot()
+            local f = assert(io.open('/sys/firmware/devicetree/base/chosen/bootargs', 'rb'))
+            local bootargs = assert(f:read('*a')):gsub('%z+$', '')
+            f:close()
+            local slot
+            for arg in bootargs:gmatch('%S+') do
+                if arg:match('^boot_slot=') then
+                    slot = arg:sub(11)
+                end
+            end
+            swupdate.trace('slot hook: profile=@@IMX_SECURITY_PROFILE@@ boot_slot=' .. tostring(slot))
+            if slot == 'a' then
+                return 'b'
+            elseif slot == 'b' then
+                return 'a'
+            else
+                error('Missing or invalid boot_slot in device tree bootargs')
+            end
+        end
+
+        function set_boot_offset(image)
+            local target = target_slot()
+            if target == 'b' then
+                image.offset = @@IMX_BOOT_SECONDARY_OFFSET@@
+            else
+                image.offset = @@IMX_BOOT_SEEK@@ * 1024
+            end
+            swupdate.trace(string.format('slot hook: select %s device=%s offset=0x%x target=%s',
+                image.filename, image.device, image.offset, target))
+            return true, image
+        end
+
+        function set_target_slot(image)
+            image.version = target_slot()
+            swupdate.trace('slot hook: bootenv ' .. image.name .. '=' .. image.version)
+            return true, image
+        end
+
+        function set_active_boot_offset(image)
+            if '@@IMX_SECURITY_PROFILE@@' ~= 'dev' then
+                swupdate.trace('slot hook: skip imx-boot-zeros profile=@@IMX_SECURITY_PROFILE@@')
+                return true, nil
+            end
+            if target_slot() == 'b' then
+                image.offset = @@IMX_BOOT_SEEK@@ * 1024
+            else
+                image.offset = @@IMX_BOOT_SECONDARY_OFFSET@@
+            end
+            swupdate.trace(string.format('slot hook: select imx-boot-zeros device=%s offset=0x%x size=@@IMX_BOOT_MAX_SIZE@@ encrypted=%s',
+                image.device, image.offset, tostring(image.encrypted)))
+            return true, image
+        end
+    ";
+
+    /* Keep boot firmware last so the FIT and rootfs are installed first */
+    images: (
+        {
+            filename = "@@IMX_SWUPDATE_FIT_IMAGE@@";
+            path = "/var/boot-update/fitImage";
+            type = "rawfile";
+            encrypted = true;
+            sha256 = "$swupdate_get_sha256(@@IMX_SWUPDATE_FIT_IMAGE@@)";
+        },
+        {
+            filename = "@@IMAGE@@-@@MACHINE@@.rootfs.@@ROOTFS_TYPE@@.avbverity.gz";
+            device = "/dev/mapper/update";
+            type = "raw";
+            compressed = "zlib";
+            encrypted = true;
+            sha256 = "$swupdate_get_sha256(@@IMAGE@@-@@MACHINE@@.rootfs.@@ROOTFS_TYPE@@.avbverity.gz)";
+        },
+        {
+            filename = "@@IMX_BOOTLOADER@@";
+            device = "/dev/bootdev";
+            type = "raw";
+            hook = "set_boot_offset";
+            encrypted = true;
+            sha256 = "$swupdate_get_sha256(@@IMX_BOOTLOADER@@)";
+        },
+        /* dev builds may reuse SW_VERSION so the ROM may keep the same slot
+         * Invalidate the active firmware after writing the inactive copy
+         * Disabled in prod which keeps the active firmware for fallback
+         */
+        {
+            filename = "imx-boot-zeros";
+            device = "/dev/bootdev";
+            type = "raw";
+            hook = "set_active_boot_offset";
+            encrypted = true;
+            sha256 = "$swupdate_get_sha256(imx-boot-zeros)";
+        }
+    );
+
+    bootenv: (
+        {
+            name = "rollback_slot";
+            value = ""; /* Clear the previous rollback when installing a new update */
+        },
+        {
+            name = "bootcount";
+            value = "0";
+        },
+        {
+            name = "upgrade_available";
+            value = "1";
+        },
+        {
+            name = "boot_slot";
+            value = "x"; /* Set by the hook */
+            hook = "set_target_slot";
+        }
+    );
+
+};

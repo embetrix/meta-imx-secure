@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-# Shared AHAB and FIT key checks
+# Shared AHAB, FIT and SWUpdate key checks
 # Generate keys and a kas fragment with tools/generate-signing-keys.sh
 
 def imx_validate_signing_flags(d):
@@ -88,6 +88,36 @@ def imx_validate_signing_keys(d):
         bb.fatal("Invalid AHAB signing keys:\n  " + "\n  ".join(errors) +
                  "\n\nGenerate keys with:\n  " + command + "tools/generate-signing-keys.sh --key-dir <KEY_DIR>\n\n"
                  "Then build with:\n  kas build kas-imx-secure.yml:kas-signing-keys.yml")
+
+def imx_swupdate_key_checksums(d, private=False):
+    import os
+
+    names = ['SWUPDATE_CMS_CERT', 'SWUPDATE_AES_FILE']
+    if private:
+        names.append('SWUPDATE_CMS_KEY')
+    return ' '.join('%s:%s' % (d.getVar(name), os.path.isfile(d.getVar(name)))
+                    for name in names if d.getVar(name))
+
+def imx_validate_swupdate_keys(d, private=False):
+    import os
+    import re
+
+    if d.getVar('SWUPDATE_SIGNING') != 'CMS':
+        bb.fatal('i.MX update bundles require SWUPDATE_SIGNING = "CMS"')
+    names = ['SWUPDATE_CMS_CERT', 'SWUPDATE_AES_FILE']
+    if private:
+        names.append('SWUPDATE_CMS_KEY')
+    for name in names:
+        path = d.getVar(name) or ''
+        if not os.path.isabs(path) or re.search(r'[\s:]', path):
+            bb.fatal('%s must be an absolute path without spaces or colons. '
+                     'Run tools/generate-signing-keys.sh and use kas-signing-keys.yml' % name)
+        if not os.path.isfile(path) or not os.access(path, os.R_OK) or not os.path.getsize(path):
+            bb.fatal('%s is missing, empty or unreadable: %s' % (name, path))
+    with open(d.getVar('SWUPDATE_AES_FILE')) as stream:
+        content = stream.read()
+    if not re.fullmatch(r'key=[0-9a-fA-F]{64}\niv=[0-9a-fA-F]{32}\n?', content):
+        bb.fatal('SWUPDATE_AES_FILE must contain key=<64 hex digits> and iv=<32 hex digits>')
 
 addhandler imx_check_signing_flags imx_check_fit_signing_keys
 imx_check_signing_flags[eventmask] = "bb.event.ConfigParsed"

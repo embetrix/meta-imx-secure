@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
+
+[Unit]
+Description=Confirm pending i.MX update
+After=swupdate.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=@SYSCONFDIR@/default/imx-update-confirm
+ExecStart=@SBINDIR@/imx-update-confirm
+TimeoutStartSec=60s
