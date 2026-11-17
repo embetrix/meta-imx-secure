@@ -26,16 +26,18 @@ Usage: $0 [options]
                        rsa2048, rsa3072 or rsa4096
   --ima-type TYPE      Same choices as --modsign-type (default: prime256v1)
   --avb-type TYPE      rsa2048, rsa4096 (default) or rsa8192
+  --swupdate-type TYPE Same choices as --modsign-type (default: prime256v1)
   -h, --help           Show this help
 
 AHAB_KEY_TYPE, AHAB_PQC_TYPE, FIT_KEY_TYPE, MODSIGN_KEY_TYPE,
-IMA_KEY_TYPE and AVB_KEY_TYPE set algorithm defaults
+IMA_KEY_TYPE, AVB_KEY_TYPE and SWUPDATE_KEY_TYPE set algorithm defaults
 Command-line options override these defaults
 
 Files use role/role-algorithm.key and .crt names, or ahab/srkN-algorithm.key and .pub
 Certificates use PEM, except IMA which uses DER
 The SSH CA uses Ed25519 keys in OpenSSH format
 The kas fragment sets the AVB algorithm to match the key size
+SWUpdate uses a separate CMS key (ECDSA P-256 by default) and AES-256 payload key
 Choose AHAB key types supported by your target SoC and revision
 PQC keys need OpenSSL with ML-DSA seed-format support
 EOF
@@ -64,10 +66,11 @@ parse_options() {
     MODSIGN_KEY_TYPE=${MODSIGN_KEY_TYPE:-prime256v1}
     IMA_KEY_TYPE=${IMA_KEY_TYPE:-prime256v1}
     AVB_KEY_TYPE=${AVB_KEY_TYPE:-rsa4096}
+    SWUPDATE_KEY_TYPE=${SWUPDATE_KEY_TYPE:-prime256v1}
     while [ "$#" -gt 0 ]; do
         case "$1" in
             -h|--help) usage; exit 0 ;;
-            --key-dir|--kas-fragment|--ahab-type|--ahab-pqc-type|--fit-type|--modsign-type|--ima-type|--avb-type)
+            --key-dir|--kas-fragment|--ahab-type|--ahab-pqc-type|--fit-type|--modsign-type|--ima-type|--avb-type|--swupdate-type)
                 [ "$#" -ge 2 ] && [ -n "$2" ] || die "Missing value for $1"
                 case "$1" in
                     --key-dir) KEY_DIR=$2 ;;
@@ -78,6 +81,7 @@ parse_options() {
                     --modsign-type) MODSIGN_KEY_TYPE=$2 ;;
                     --ima-type) IMA_KEY_TYPE=$2 ;;
                     --avb-type) AVB_KEY_TYPE=$2 ;;
+                    --swupdate-type) SWUPDATE_KEY_TYPE=$2 ;;
                 esac
                 shift 2
                 ;;
@@ -87,6 +91,7 @@ parse_options() {
     AHAB_KEY_TYPE=$(classical_key_type AHAB "$AHAB_KEY_TYPE")
     MODSIGN_KEY_TYPE=$(classical_key_type module "$MODSIGN_KEY_TYPE")
     IMA_KEY_TYPE=$(classical_key_type IMA "$IMA_KEY_TYPE")
+    SWUPDATE_KEY_TYPE=$(classical_key_type SWUpdate "$SWUPDATE_KEY_TYPE")
     case "$FIT_KEY_TYPE" in
         rsa2048|rsa3072|rsa4096) ;;
         *) die "Unsupported FIT key type: $FIT_KEY_TYPE" ;;
@@ -104,6 +109,7 @@ parse_options() {
     IMA_BASE=ima/ima-$IMA_KEY_TYPE
     AVB_BASE=avb/avb-$AVB_KEY_TYPE
     SSH_CA_BASE=ssh-ca/ssh-ca-ed25519
+    SWUPDATE_BASE=swupdate/swupdate-$SWUPDATE_KEY_TYPE
 }
 
 check_file() {
@@ -133,7 +139,7 @@ prepare() {
     case "$KEY_DIR" in
         *[!a-zA-Z0-9_./+-]*) die "The resolved key directory contains unsupported characters" ;;
     esac
-    for role in ahab fit modsign ima avb ssh-ca; do
+    for role in ahab fit modsign ima avb ssh-ca swupdate; do
         [ ! -L "$KEY_DIR/$role" ] || die "$role directory must not be a symlink"
         [ ! -e "$KEY_DIR/$role" ] || [ -d "$KEY_DIR/$role" ] || die "$role must be a directory"
     done
@@ -147,20 +153,21 @@ prepare() {
     fi
 }
 
-# One row per pair: base, algorithm, public format, subject
+# One row per pair: base, algorithm, public format, subject, certificate purpose
 key_specs() (
     for i in 0 1 2 3; do
-        echo "ahab/srk$i-$AHAB_KEY_TYPE|$AHAB_KEY_TYPE|PUB|AHAB"
+        echo "ahab/srk$i-$AHAB_KEY_TYPE|$AHAB_KEY_TYPE|PUB|AHAB|"
         if [ "$AHAB_PQC_TYPE" != none ]; then
-            echo "ahab/srk$i-$AHAB_PQC_TYPE|$AHAB_PQC_TYPE|PUB|AHAB"
+            echo "ahab/srk$i-$AHAB_PQC_TYPE|$AHAB_PQC_TYPE|PUB|AHAB|"
         fi
     done
     cat <<EOF
-$FIT_BASE|$FIT_KEY_TYPE|PEM|i.MX FIT signing
-$MODSIGN_BASE|$MODSIGN_KEY_TYPE|PEM|i.MX module signing
-$IMA_BASE|$IMA_KEY_TYPE|DER|i.MX IMA-EVM signing
-$AVB_BASE|$AVB_KEY_TYPE|PEM|i.MX AVB signing
-$SSH_CA_BASE|ed25519|SSH|i.MX SSH CA
+$FIT_BASE|$FIT_KEY_TYPE|PEM|i.MX FIT signing|
+$MODSIGN_BASE|$MODSIGN_KEY_TYPE|PEM|i.MX module signing|codeSigning
+$IMA_BASE|$IMA_KEY_TYPE|DER|i.MX IMA-EVM signing|codeSigning
+$AVB_BASE|$AVB_KEY_TYPE|PEM|i.MX AVB signing|codeSigning
+$SSH_CA_BASE|ed25519|SSH|i.MX SSH CA|
+$SWUPDATE_BASE|$SWUPDATE_KEY_TYPE|PEM|i.MX SWUpdate signing|emailProtection
 EOF
 )
 
@@ -247,6 +254,7 @@ process_pair() (
     key_type=$3
     format=$4
     subject=$5
+    purpose=$6
     private=$base.key
     public=$base.crt
     case "$format" in PUB|SSH) public=$base.pub ;; esac
@@ -255,6 +263,7 @@ process_pair() (
         # A different filename must not silently create a replacement key
         for other in "${base%-$key_type}"-*.key "${base%-$key_type}"-*.pub "${base%-$key_type}"-*.crt; do
             [ -e "$other" ] || [ -L "$other" ] || continue
+            [ "$other" != "$KEY_DIR/swupdate/swupdate-aes.key" ] || continue
             case "${other##*/}:$key_type" in
                 srk*-mldsa*:mldsa*) ;;
                 srk*-mldsa*:*) continue ;;
@@ -280,10 +289,10 @@ process_pair() (
             openssl pkey -in "$private" -passin pass: -pubout -out "$TEMP_DIR/new.public"
         else
             set --
-            if [ "$subject" != 'i.MX FIT signing' ]; then
+            if [ -n "$purpose" ]; then
                 set -- -addext "basicConstraints=critical,CA:FALSE" \
                     -addext "keyUsage=digitalSignature" \
-                    -addext "extendedKeyUsage=critical,codeSigning" \
+                    -addext "extendedKeyUsage=critical,$purpose" \
                     -addext "subjectKeyIdentifier=hash"
                 subject="$subject/O=Embetrix"
             fi
@@ -298,9 +307,27 @@ process_pair() (
 )
 
 process_keys() (
-    while IFS='|' read -r base algorithm format subject; do
-        process_pair "$1" "$base" "$algorithm" "$format" "$subject"
+    while IFS='|' read -r base algorithm format subject purpose; do
+        process_pair "$1" "$base" "$algorithm" "$format" "$subject" "$purpose"
     done < "$TEMP_DIR/specs"
+)
+
+process_swupdate_aes() (
+    keyfile="$KEY_DIR/swupdate/swupdate-aes.key"
+    check_file "$keyfile"
+    if [ ! -e "$keyfile" ]; then
+        [ "$1" = generate ] || exit 0
+        mkdir -p "$KEY_DIR/swupdate"
+        openssl enc -aes-256-cbc -k "$(openssl rand -hex 32)" -P -md sha1 -nosalt 2>/dev/null \
+            | tr -d ' ' > "$TEMP_DIR/aes.key"
+        publish "$TEMP_DIR/aes.key" "$keyfile" 600
+    fi
+    awk '
+        NR == 1 && /^key=[0-9a-fA-F]+$/ && length($0) == 68 { key = 1 }
+        NR == 2 && /^iv=[0-9a-fA-F]+$/ && length($0) == 35 { iv = 1 }
+        END { exit !(NR == 2 && key && iv) }
+    ' "$keyfile" || die "Invalid SWUpdate AES key file: $keyfile"
+    chmod 600 "$keyfile"
 )
 
 srk_settings() (
@@ -339,6 +366,9 @@ EOF
     AVB_SIGN_KEY ?= "$KEY_DIR/$AVB_BASE.key"
     AVB_X509 ?= "$KEY_DIR/$AVB_BASE.crt"
     AVB_ALGORITHM = "SHA256_RSA${AVB_KEY_TYPE#rsa}"
+    SWUPDATE_CMS_KEY ?= "$KEY_DIR/$SWUPDATE_BASE.key"
+    SWUPDATE_CMS_CERT ?= "$KEY_DIR/$SWUPDATE_BASE.crt"
+    SWUPDATE_AES_FILE ?= "$KEY_DIR/swupdate/swupdate-aes.key"
     OPENSSH_CA_PUBKEY ?= "$KEY_DIR/$SSH_CA_BASE.pub"
 EOF
 }
@@ -347,13 +377,6 @@ check_fragment() (
     [ -e "$KAS_FRAGMENT" ] || exit 0
     cp "$KAS_FRAGMENT" "$TEMP_DIR/original.yml"
     cmp -s "$TEMP_DIR/kas.yml" "$KAS_FRAGMENT" && exit 0
-    # Allow adding PQC keys or the SSH CA setting to the current layout
-    (AHAB_PQC_TYPE=none; render_fragment) > "$TEMP_DIR/without-pqc.yml"
-    for candidate in "$TEMP_DIR/kas.yml" "$TEMP_DIR/without-pqc.yml"; do
-        cmp -s "$candidate" "$KAS_FRAGMENT" && exit 0
-        sed '/^    OPENSSH_CA_PUBKEY /d' "$candidate" > "$TEMP_DIR/without-ssh-ca.yml"
-        cmp -s "$TEMP_DIR/without-ssh-ca.yml" "$KAS_FRAGMENT" && exit 0
-    done
     die "$KAS_FRAGMENT already exists with different settings, choose another fragment path"
 )
 
@@ -383,7 +406,9 @@ main() {
     render_fragment > "$TEMP_DIR/kas.yml"
     check_fragment
     process_keys check
+    process_swupdate_aes check
     process_keys generate
+    process_swupdate_aes generate
     write_fragment
     echo "Keys checked in: $KEY_DIR"
     echo "Kas fragment: $KAS_FRAGMENT"
