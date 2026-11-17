@@ -10,8 +10,8 @@ SWU_IMAGE ?= "${@d.getVar('PN').removesuffix('-update')}"
 SRC_URI = "file://sw-description"
 IMAGE = "${SWU_IMAGE}"
 IMAGE_DEPENDS = "${SWU_IMAGE}"
-SWUPDATE_IMAGES = " ${IMX_BOOTLOADER} fitImage ${SWU_IMAGE}"
-SWUPDATE_IMAGES_ENCRYPTED[fitImage] = "1"
+IMX_SWUPDATE_FIT_IMAGE ?= "${@bb.utils.contains('IMX_FIT_AHAB_ENABLE', '1', 'fitImage.ahab', 'fitImage', d)}"
+SWUPDATE_IMAGES = " ${IMX_BOOTLOADER} ${IMX_SWUPDATE_FIT_IMAGE} ${SWU_IMAGE}"
 # Let swugenerator create a fresh IV for each payload and add it to the manifest
 SWUPDATE_UNIQUE_IV = "1"
 
@@ -21,6 +21,7 @@ python () {
         bb.fatal('SWU_IMAGE must be set before requiring imx-secure-image-update.inc')
     d.setVarFlag('SWUPDATE_IMAGES_FSTYPES', img, '-${MACHINE}.rootfs.${ROOTFS_TYPE}.avbverity.gz')
     d.setVarFlag('SWUPDATE_IMAGES_ENCRYPTED', img, '1')
+    d.setVarFlag('SWUPDATE_IMAGES_ENCRYPTED', d.getVar('IMX_SWUPDATE_FIT_IMAGE'), '1')
     d.setVarFlag('SWUPDATE_IMAGES_ENCRYPTED', d.getVar('IMX_BOOTLOADER'), '1')
 }
 

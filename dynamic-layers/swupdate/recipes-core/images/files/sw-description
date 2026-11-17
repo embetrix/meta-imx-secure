@@ -66,11 +66,11 @@ software = {
     /* Keep boot firmware last so the FIT and rootfs are installed first */
     images: (
         {
-            filename = "fitImage";
+            filename = "@@IMX_SWUPDATE_FIT_IMAGE@@";
             path = "/var/boot-update/fitImage";
             type = "rawfile";
             encrypted = true;
-            sha256 = "$swupdate_get_sha256(fitImage)";
+            sha256 = "$swupdate_get_sha256(@@IMX_SWUPDATE_FIT_IMAGE@@)";
         },
         {
             filename = "@@IMAGE@@-@@MACHINE@@.rootfs.@@ROOTFS_TYPE@@.avbverity.gz";
