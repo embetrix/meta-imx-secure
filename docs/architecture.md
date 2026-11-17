@@ -30,14 +30,17 @@ Optional PQC signing covers the configured AHAB containers.
 
 ## Initramfs workflow
 
-The bundled initramfs:
+```mermaid
+flowchart TD
+    KEYS["Load or create storage keys"] --> ROOT["Open active root with dm-crypt"]
+    ROOT -->|First-boot copy needed| COPY["Copy inactive root through dm-crypt"]
+    ROOT -->|Already encrypted| VERIFY["Verify AVB metadata<br/>Set up dm-verity"]
+    COPY --> VERIFY
+    VERIFY --> MOUNT["Mount read-only root<br/>and encrypted writable data"]
+    MOUNT --> INIT["Switch to real root<br/>Start systemd"]
+```
 
-1. Loads or creates storage encryption keys.
-2. Opens the active root partition with dm-crypt.
-3. If no filesystem is detected, copies the inactive root image through dm-crypt to encrypt it.
-4. Verifies AVB metadata and sets up dm-verity.
-5. Mounts the verified read-only root filesystem and encrypted writable data filesystem.
-6. Switches to the real root filesystem and starts systemd.
+First-boot encryption resumes after interruptions. Fatal errors force a reboot.
 
 ## Partition layout
 
