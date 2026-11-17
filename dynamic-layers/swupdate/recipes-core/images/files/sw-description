@@ -18,16 +18,16 @@ software = {
                 end
             end
             if slot == 'a' then
-                return 'B'
+                return 'b'
             elseif slot == 'b' then
-                return 'A'
+                return 'a'
             else
                 error('Missing or invalid boot_slot in device tree bootargs')
             end
         end
 
         function set_boot_offset(image)
-            if target_slot() == 'B' then
+            if target_slot() == 'b' then
                 image.offset = @@IMX_BOOT_SECONDARY_OFFSET@@
             else
                 image.offset = @@IMX_BOOT_SEEK@@ * 1024
@@ -37,6 +37,18 @@ software = {
 
         function set_target_slot(image)
             image.version = target_slot()
+            return true, image
+        end
+
+        function set_active_boot_offset(image)
+            if '@@IMX_SECURITY_PROFILE@@' ~= 'dev' then
+                return true, nil
+            end
+            if target_slot() == 'b' then
+                image.offset = @@IMX_BOOT_SEEK@@ * 1024
+            else
+                image.offset = @@IMX_BOOT_SECONDARY_OFFSET@@
+            end
             return true, image
         end
     ";
@@ -65,6 +77,18 @@ software = {
             hook = "set_boot_offset";
             encrypted = true;
             sha256 = "$swupdate_get_sha256(@@IMX_BOOTLOADER@@)";
+        },
+        /* dev security profile builds may reuse SW_VERSION so the ROM may keep the same slot
+         * Update the active firmware copy too so either slot loads the new imx-boot
+         * Disabled in prod which updates only the inactive firmware copy
+         */
+        {
+            filename = "@@IMX_BOOTLOADER@@";
+            device = "/dev/bootdev";
+            type = "raw";
+            hook = "set_active_boot_offset";
+            encrypted = true;
+            sha256 = "$swupdate_get_sha256(@@IMX_BOOTLOADER@@)";
         }
     );
 
@@ -75,7 +99,12 @@ software = {
         },
         {
             name = "update_target_slot";
-            value = "X"; /* Set by the hook */
+            value = "x"; /* Set by the hook */
+            hook = "set_target_slot";
+        },
+        {
+            name = "boot_slot";
+            value = "x"; /* Set by the hook */
             hook = "set_target_slot";
         }
     );
