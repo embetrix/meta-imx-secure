@@ -75,6 +75,11 @@ repos:
       .:
       meta-integrity:
 
+  meta-selinux:
+    url: https://git.yoctoproject.org/git/meta-selinux.git
+    branch: wrynose
+    path: layers/meta-selinux
+
 env:
   SECURITY_PROFILE: "dev"
 

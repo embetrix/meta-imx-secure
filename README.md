@@ -65,6 +65,7 @@ BSP layers are pinned to NXP `LF6.18.37_2.1.0`. Other repos follow Wrynose. See 
 | [meta-openembedded](https://github.com/openembedded/meta-openembedded/tree/wrynose) | `wrynose` | meta-oe, meta-python, meta-networking and meta-multimedia |
 | [meta-avb](https://github.com/embetrix/meta-avb/tree/wrynose) | `wrynose` | meta-avb |
 | [meta-security](https://git.yoctoproject.org/meta-security/tree/?h=wrynose) | `wrynose` | meta-security and meta-integrity |
+| [meta-selinux](https://git.yoctoproject.org/meta-selinux/tree/?h=wrynose) | `wrynose` | meta-selinux (optional) |
 | [meta-arm](https://git.yoctoproject.org/meta-arm/tree/?h=wrynose) | `wrynose` | meta-arm and meta-arm-toolchain |
 | [meta-freescale](https://github.com/Freescale/meta-freescale/tree/wrynose) | `wrynose` | meta-freescale |
 | [meta-imx](https://github.com/nxp-imx/meta-imx/tree/wrynose-6.18.37-2.1.0) | `wrynose-6.18.37-2.1.0` | meta-imx-bsp |
@@ -75,4 +76,5 @@ Maintained by [Embetrix](https://embetrix.com) Embedded Systems Solutions. Conta
 
 ## Disclaimer
 
-This layer is a starting point for your product. You are responsible for assessing threats, removing unused software and services and adapting firewall rules, USBGuard rules, software updates and key management to your needs. You must also check license compliance, track and address CVEs in all included software and test the full boot and recovery process. Incorrect OTP fuse programming can permanently disable a device. The maintainers accept no liability for damage caused by fuse programming, lost or leaked signing keys or misconfiguration. This layer is provided as is, without warranty. No security certification is implied. See the [MIT License](COPYING.MIT) for the warranty and liability terms.
+This layer is a starting point for your product. You are responsible for assessing threats, removing unused software and services and adapting firewall, USBGuard rules, Selinux policy, software updates and key management to your needs. You must also check license compliance, track and address CVEs in all included software and test the full boot and recovery process. Incorrect OTP fuse programming can permanently disable a device. The maintainers accept no liability for damage caused by fuse programming, lost or leaked signing keys or misconfiguration. This layer is provided as is, without warranty. No security certification is implied. See the [MIT License](COPYING.MIT) for the warranty and liability terms.
+

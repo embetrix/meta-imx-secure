@@ -9,6 +9,9 @@ DISTRO_VERSION = "${IMX_SECURE_VERSION}"
 
 DISTRO_FEATURES += "polkit ima integrity security"
 
+# Use journald instead of a separate syslog daemon
+VIRTUAL-RUNTIME_base-utils-syslog = ""
+
 # Development and production profiles
 IMX_SECURITY_PROFILE ??= "dev"
 INHERIT += "imx-security-profile"
@@ -30,6 +33,9 @@ require conf/machine/include/imx-secure.inc
 # Root filesystem signing
 INHERIT += "ima-evm-rootfs"
 IMAGE_CLASSES += "avb-verity"
+
+# Enable SELinux integration when meta-selinux is present
+require ${@bb.utils.contains('BBFILE_COLLECTIONS', 'selinux', 'dynamic-layers/selinux/conf/distro/include/imx-secure-selinux.inc', '', d)}
 
 # CVE checks conditional on security profile
 IMAGE_CLASSES += "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'sbom-cve-check', '', d)}"
