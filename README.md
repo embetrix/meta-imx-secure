@@ -6,20 +6,21 @@
 A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and verified storage, integrity checks and kernel and userspace hardening.
 
 > **NOTE:**
-> This layer does not automatically perform irreversible provisioning. Secure boot requires OEM SRK hash fuse programming and device lifecycle closure. Storage rollback protection requires RPMB key provisioning and RPMB storage enabled. Signed images alone do not secure the device.
+> Using this layer does not automatically perform irreversible provisioning. Secure boot requires OEM SRK hash fuse programming and device lifecycle closure. Storage rollback protection requires RPMB key provisioning and RPMB storage enabled. Signed images alone do not secure the device.
 
 ## Features
 
 | Area | Description |
 | --- | --- |
-| Boot security | AHAB boot image signing with NXP SPSDK, signed Linux FIT images and optional AHAB PQC signing on supported silicon |
-| Storage | Encrypted read-only root filesystem, AVB metadata verification, dm-verity with forward error correction (FEC) and encrypted writable data |
-| Key protection | OP-TEE-backed kernel encrypted keys plus EdgeLock Enclave cryptography and persistent key storage |
-| Runtime protection | IMA/EVM integrity checks and kernel and userspace hardening |
-| Access control | SELinux, nftables firewall, OpenSSH CA authentication, USBGuard and audit logging |
-| Cryptographic integration | OpenSSL integration through PKCS#11 using OP-TEE or NXP Security Middleware (SMW), OP-TEE ftpm, OP-TEE PQC (experimental) |
-| Build and integration | Development and production profiles, A/B boot and root filesystem layout, CVE scanning and SPDX SBOM generation |
-| OTA updates | A/B updates with optional signed and encrypted SWUpdate bundles |
+| Secure boot | AHAB signing with NXP SPSDK, signed Linux FIT images and a full PQC secure boot chain on supported silicon |
+| Storage protection | Encrypted read-only root filesystem and writable data, AVB-verified rootfs using dm-verity with forward error correction (FEC) |
+| Key protection | OP-TEE-backed kernel trusted and encrypted keys, EdgeLock Enclave cryptography and persistent key storage on supported SoCs |
+| Runtime integrity | IMA/EVM signature checks and enforced kernel module signatures |
+| Access control | Optional SELinux, nftables firewall, USBGuard, audit logging and OpenSSH CA authentication in production |
+| Application cryptography | OpenSSL PKCS#11 integration through OP-TEE or NXP Security Middleware (SMW), experimental OP-TEE PQC |
+| TPM support | OP-TEE fTPM |
+| OTA updates | A/B system updates with optional SWUpdate integration for signed and encrypted bundles |
+| Build and hardening | Development and production profiles, kernel and userspace hardening, SPDX SBOM generation and CVE checks |
 
 These features support [Cyber Resilience Act (CRA)](https://digital-strategy.ec.europa.eu/en/policies/cra-manufacturers) readiness. Compliance depends on the finished product and its maintenance processes.
 
