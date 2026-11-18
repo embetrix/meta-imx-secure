@@ -30,6 +30,10 @@ EXTRA_OEMAKE:append = " \
 "
 
 # Store PKCS#11 data in encrypted REE storage without accessing RPMB
+# Production security limitation: stored data has no rollback protection
+# An attacker can restore an older valid snapshot including fTPM and PKCS#11 state
+# RPMB rollback protection requires a provisioned authentication key
+# Provisioning that key is irreversible and it cannot be changed afterwards
 # AVB persistent storage remains unavailable without RPMB
 EXTRA_OEMAKE:append = " \
     CFG_REE_FS=y \
