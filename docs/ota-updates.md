@@ -27,6 +27,8 @@ See [build artifacts](building-images.md#build-artifacts) for the files produced
 
 Optional SWUpdate support provides CMS-signed, AES-encrypted `.swu` bundles through `imx-secure-image-base-update`. Install a bundle with `swupdate-client /path/to/imx-secure-image-base-update.swu`.
 
+> **WARNING:** Do not test a *dev* to *prod* SWUpdate transition with the same `SW_VERSION`. Production bundles keep the old firmware copy because ROM may boot the old slot and trigger a slot-mismatch reboot loop. Use a strictly higher firmware version.
+
 ## OTA update workflow
 
 ```mermaid
