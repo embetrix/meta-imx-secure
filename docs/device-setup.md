@@ -48,6 +48,8 @@ ssh-keygen -s imx-secure-keys/ssh-ca/ssh-ca-ed25519.key \
 
 This issues a client SSH certificate valid for one hour. Keep validity as short as your work allows.
 
+> **NOTE:** This certificate allows root login to all devices trusting the same SSH CA under the default configuration. For hostname-based restrictions, see the commented `AuthorizedPrincipalsCommand` example in [openssh_%.bbappend](../recipes-connectivity/openssh/openssh_%.bbappend). It is disabled by default and requires unique device hostnames.
+
 Then connect using the matching private key:
 
 ```sh

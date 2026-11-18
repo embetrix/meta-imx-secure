@@ -4,6 +4,21 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 OPENSSH_CA_PUBKEY ??= ""
+
+# Optional hostname-bound certificates (disabled)
+# Each device needs a unique stable hostname and certificates signed with
+# -n root@device-001 instead of -n root for root access to device-001
+# Add to both sshd configs alongside TrustedUserCAKeys:
+#   AuthorizedPrincipalsFile none
+#   AuthorizedPrincipalsCommand /usr/libexec/ssh-principals %u
+#   AuthorizedPrincipalsCommandUser nobody
+# Install /usr/libexec/ssh-principals owned by root with mode 0755:
+#   #!/bin/sh
+#   device_hostname=$(hostname) || exit 1
+#   [ -n "$device_hostname" ] || exit 1
+#   printf '%s@%s\n' "$1" "$device_hostname"
+# Devices sharing a hostname accept the same certificate
+
 OPENSSH_HOST_KEY_DIR = "${sysconfdir}/ssh/keys"
 OPENSSH_HOST_KEY_DIR_READONLY_CONFIG = "${sysconfdir}/ssh/keys"
 
