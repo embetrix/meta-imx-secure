@@ -6,7 +6,7 @@
 A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and verified storage, integrity checks and kernel and userspace hardening.
 
 > **NOTE:**
-> Using this layer does not automatically burn OTP fuses or provision RPMB authentication keys. Irreversible steps such as programming OEM SRK hash fuses, closing the device lifecycle or provisioning an RPMB key must be performed explicitly.
+> This layer does not automatically perform irreversible provisioning. Secure boot requires OEM SRK hash fuse programming and device lifecycle closure. Storage rollback protection requires RPMB key provisioning and RPMB storage enabled. Signed images alone do not secure the device.
 
 ## Features
 
@@ -34,7 +34,7 @@ The layer targets NXP i.MX8 and i.MX9 boards. AHAB signing supports these SoCs:
 
 Feature support depends on the board and BSP. Boards outside the tested list may need further adaptation.
 
-PQC support depends on the SoC, silicon revision and container format. See [NXP's i.MX95 B0 example](https://spsdk.readthedocs.io/en/latest/examples/ahab/imx95/imx95_ahab_sign.html) and the [layer signing options](classes-recipe/imx-ahab-sign.bbclass). HABv4 signing is not implemented.
+PQC support depends on the SoC, silicon revision and container format. See [NXP's i.MX95 B0 example](https://spsdk.readthedocs.io/en/latest/examples/ahab/imx95/imx95_ahab_sign.html) and the [layer signing options](classes-recipe/imx-ahab-sign.bbclass). HABv4 signing is not implemented yet but is planned for the future.
 
 ### Tested hardware
 
