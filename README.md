@@ -5,6 +5,9 @@
 
 A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and verified storage, integrity checks and kernel and userspace hardening.
 
+> **NOTE:**
+> Using this layer does not automatically burn OTP fuses or provision RPMB authentication keys. Irreversible steps such as programming OEM SRK hash fuses, closing the device lifecycle or provisioning an RPMB key must be performed explicitly.
+
 ## Features
 
 | Area | Description |
