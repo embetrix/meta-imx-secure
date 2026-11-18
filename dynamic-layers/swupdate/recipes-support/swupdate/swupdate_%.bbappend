@@ -21,6 +21,10 @@ python imx_install_swupdate_keys() {
     # WARNING: Store the key from SWUPDATE_AES_FILE in secure storage for production
     # and use it from there!
     # This currently installs it as a plain file in the root filesystem
+    # OP-TEE PKCS#11 alternative: enable CONFIG_PKCS11 with p11-kit and set
+    # decrypt-provider = "pkcs11" then install a key file containing the
+    # provisioned key's PKCS#11 URI (libckteec.so.0) and IV instead of the plain key
+    # https://sbabic.github.io/swupdate/encrypted_images.html#decrypting-with-a-pkcs-11-token
     with open(d.getVar('SWUPDATE_AES_FILE')) as stream:
         aes = dict(line.strip().split('=', 1) for line in stream if line.strip())
     keyfile = os.path.join(config, 'swupdate-aes.key')
