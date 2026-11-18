@@ -76,6 +76,23 @@ await_blockdev() {
 	fatal "Timeout waiting for $1"
 }
 
+# Zero and flush the entire block device
+# Usage: zero_block_device <device>
+zero_block_device() {
+
+	cleanup_sectors=$(blockdev --getsz "$1") \
+		|| fatal "cannot get size of $1"
+	dd if=/dev/zero of="$1" bs=1M count=$((cleanup_sectors / 2048)) conv=fsync \
+		|| fatal "cannot zero $1"
+	# Finish any partial MiB at the end of the partition
+	if [ $((cleanup_sectors % 2048)) -ne 0 ]; then
+		dd if=/dev/zero of="$1" bs=512 \
+			seek=$((cleanup_sectors / 2048 * 2048)) \
+			count=$((cleanup_sectors % 2048)) conv=notrunc,fsync \
+			|| fatal "cannot finish zeroing $1"
+	fi
+}
+
 watchdog_feed_start() {
 
 	[ -e "$WATCHDOG_DEV" ] || return 0

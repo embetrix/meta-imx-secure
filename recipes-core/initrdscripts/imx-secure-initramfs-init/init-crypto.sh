@@ -138,8 +138,10 @@ setup_encrypted_rootfs() {
 	case "$ROOTFS_CRYPT_STATE" in
 		cleanup)
 			# After this point slot B can no longer be used as a copy source
-			blkdiscard -sf "$UPDATE_DEV" 2>/dev/null \
-				|| klog "Secure discard failed or unsupported on $UPDATE_DEV"
+			if ! blkdiscard -sf "$UPDATE_DEV" 2>/dev/null; then
+				klog "Secure discard failed on $UPDATE_DEV, overwriting with zeros"
+				zero_block_device "$UPDATE_DEV"
+			fi
 			set_rootfs_crypt_state done
 			;;
 		done) ;;
