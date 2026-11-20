@@ -36,7 +36,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     libssl-dev \
     locales \
     nano \
+    opensc \
     openssh-client \
+    pkcs11-provider \
     pylint \
     python3 \
     python3-pexpect \
@@ -44,6 +46,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     pipx \
     rsync \
     socat \
+    softhsm2 \
     sudo \
     texinfo \
     tmux \
