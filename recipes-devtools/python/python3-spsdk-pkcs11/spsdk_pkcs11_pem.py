@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-"""Sign AHAB images using ASN.1 references to HSM keys
+"""Sign AHAB images using PKCS#11 URIs or ASN.1 references to HSM keys
 
-Read a PKCS#11 PROVIDER URI PEM file and use the referenced token key through
+Read a PKCS#11 URI or PROVIDER URI PEM file and use the referenced token key through
 the SPSDK PKCS#11 plugin. The private key stays on the HSM. Before signing,
 prepare_signer checks that the key matches the selected SRK public key.
 
@@ -20,7 +20,7 @@ import base64
 import os
 import re
 from pathlib import Path
-from urllib.parse import unquote_to_bytes
+from urllib.parse import quote, unquote, unquote_to_bytes
 
 import pkcs11
 from asn1crypto import core
@@ -37,24 +37,9 @@ class Reference(core.Sequence):
     _fields = [("description", core.VisibleString), ("uri", core.UTF8String)]
 
 
-def read_reference(path):
-    """Return URI attributes, or None for a normal key file"""
-    data = Path(path).read_bytes()
-    if ("-----BEGIN " + PEM_LABEL + "-----").encode() not in data:
-        return None
+def parse_uri(uri):
+    """Read a private-key URI without exposing its contents in errors"""
     try:
-        # asn1crypto's PEM reader does not accept '#' in a PEM label
-        lines = data.strip().splitlines()
-        if (len(lines) < 3 or lines[0] != b"-----BEGIN PKCS#11 PROVIDER URI-----"
-                or lines[-1] != b"-----END PKCS#11 PROVIDER URI-----"):
-            raise ValueError()
-        der = base64.b64decode(b"".join(lines[1:-1]), validate=True)
-        reference = Reference.load(der, strict=True)
-        if len(reference) != 2:
-            raise ValueError()
-        if reference["description"].native != "PKCS#11 Provider URI v1.0":
-            raise ValueError()
-        uri = reference["uri"].native
         if not uri.startswith("pkcs11:") or "#" in uri or "?" in uri:
             raise ValueError()
         attributes = {}
@@ -74,8 +59,28 @@ def read_reference(path):
         return attributes
     except (ValueError, TypeError, KeyError) as error:
         # Do not echo URI contents, which might contain a PIN
-        raise SPSDKError("Invalid PKCS#11 reference PEM. Use a private-key URI with token/serial "
+        raise SPSDKError("Invalid PKCS#11 URI. Use a private-key URI with token/serial "
                          "and object/id, without query parameters") from error
+
+
+def read_reference(path):
+    """Return URI attributes, or None for a normal key file"""
+    data = Path(path).read_bytes()
+    if ("-----BEGIN " + PEM_LABEL + "-----").encode() not in data:
+        return None
+    try:
+        # asn1crypto's PEM reader does not accept '#' in a PEM label
+        lines = data.strip().splitlines()
+        if (len(lines) < 3 or lines[0] != b"-----BEGIN PKCS#11 PROVIDER URI-----"
+                or lines[-1] != b"-----END PKCS#11 PROVIDER URI-----"):
+            raise ValueError()
+        der = base64.b64decode(b"".join(lines[1:-1]), validate=True)
+        reference = Reference.load(der, strict=True)
+        if len(reference) != 2 or reference["description"].native != "PKCS#11 Provider URI v1.0":
+            raise ValueError()
+        return parse_uri(reference["uri"].native)
+    except (ValueError, TypeError, KeyError) as error:
+        raise SPSDKError("Invalid PKCS#11 reference PEM") from error
 
 
 class PKCS11PEM(PKCS11SP):
@@ -83,8 +88,8 @@ class PKCS11PEM(PKCS11SP):
 
     identifier = "pkcs11_pem"
 
-    def __init__(self, file_path, hash_alg=None, pss_padding=True, **kwargs):
-        reference = read_reference(file_path)
+    def __init__(self, file_path=None, hash_alg=None, pss_padding=True, uri=None, **kwargs):
+        reference = parse_uri(uri) if uri is not None else read_reference(file_path)
         if reference is None:
             raise SPSDKError("Expected a PKCS#11 reference PEM")
         module = os.environ.get("IMX_SIGN_PKCS11_MODULE", "")
@@ -102,7 +107,7 @@ class PKCS11PEM(PKCS11SP):
                 pss_padding=pss_padding, **kwargs)
             for name in ("manufacturer", "model"):
                 if name in reference and getattr(self.token, name) != reference[name]:
-                    raise SPSDKError(f"PKCS#11 token {name} does not match the reference PEM")
+                    raise SPSDKError(f"PKCS#11 token {name} does not match the key reference")
         except pkcs11.PKCS11Error as error:
             raise SPSDKError(f"PKCS#11 token lookup failed: {type(error).__name__}") from error
 
@@ -130,24 +135,43 @@ class PKCS11PEM(PKCS11SP):
 
     def verify_public_key(self, public_key):
         if not isinstance(public_key, (PublicKeyEcc, PublicKeyRsa)):
-            raise SPSDKError("PKCS#11 reference PEM files support RSA and ECC keys only")
+            raise SPSDKError("PKCS#11 signing supports RSA and ECC keys only")
         data = b"AHAB PKCS#11 key check"
         return public_key.verify_signature(self.sign(data), data, algorithm=self.hash_alg,
                                            pss_padding=self.pss_padding)
 
 
+class PKCS11URI(PKCS11PEM):
+    """Use a URI encoded for SPSDK's semicolon-separated provider settings"""
+
+    identifier = "pkcs11_uri"
+
+    def __init__(self, encoded_uri, **kwargs):
+        super().__init__(uri=unquote(encoded_uri), **kwargs)
+
+
 def prepare_signer(path, public_key, hash_algorithm="default"):
     """Check the referenced key and return an SPSDK signer string"""
-    if read_reference(path) is None:
-        return None
-    if any(char in str(path) for char in ";="):
-        raise SPSDKError("PKCS#11 reference PEM paths must not contain ';' or '='")
+    uri = str(path).startswith("pkcs11:")
+    if uri:
+        parse_uri(str(path))
+    else:
+        if read_reference(path) is None:
+            return None
+        if any(char in str(path) for char in ";="):
+            raise SPSDKError("PKCS#11 reference PEM paths must not contain ';' or '='")
     if not isinstance(public_key, (PublicKeyEcc, PublicKeyRsa)):
-        raise SPSDKError("PKCS#11 reference PEM files support RSA and ECC keys only")
+        raise SPSDKError("PKCS#11 signing supports RSA and ECC keys only")
     algorithm = (EnumHashAlgorithm.from_label(hash_algorithm) if hash_algorithm != "default"
                  else EnumHashAlgorithm.SHA256 if isinstance(public_key, PublicKeyRsa)
                  else public_key.default_hash_algorithm)
-    provider = PKCS11PEM(str(path), hash_alg=algorithm)
+    if uri:
+        encoded = quote(str(path), safe="")
+        provider = PKCS11URI(encoded, hash_alg=algorithm)
+        config = f"type=pkcs11_uri;encoded_uri={encoded}"
+    else:
+        provider = PKCS11PEM(str(path), hash_alg=algorithm)
+        config = f"type=pkcs11_pem;file_path={path}"
     if not provider.verify_public_key(public_key):
         raise SPSDKError("PKCS#11 key does not match the selected SRK public key")
-    return f"type=pkcs11_pem;file_path={path}"
+    return config

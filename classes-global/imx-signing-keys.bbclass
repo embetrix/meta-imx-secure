@@ -75,7 +75,8 @@ def imx_validate_signing_keys(d):
             public_keys = (d.getVar(prefix + "_SRK_FILES") or "").split()
             if len(public_keys) != 4:
                 errors.append("%s_SRK_FILES must list four public keys or certificates" % prefix)
-            files.append((prefix + "_PRIVATE_KEY", d.getVar(prefix + "_PRIVATE_KEY"), directory))
+            if prefix != "IMX_SIGN" or not d.getVar("IMX_SIGN_PKCS11_URI"):
+                files.append((prefix + "_PRIVATE_KEY", d.getVar(prefix + "_PRIVATE_KEY"), directory))
             files += [(prefix + "_SRK_FILES", path, directory) for path in public_keys]
     for name, path, directory in files:
         path = os.path.join(directory or "", path or "")

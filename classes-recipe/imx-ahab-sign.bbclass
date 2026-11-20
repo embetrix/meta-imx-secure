@@ -11,8 +11,10 @@
 # IMX_SIGN_PRIVATE_KEY defaults to srk${IMX_SIGN_SRK_ID}.pem and must match that entry
 # Key paths may be absolute or relative to their configured key directory
 # Keys must stay inside that directory so changes trigger signing
-# Private keys must be local, unencrypted files or PKCS#11 reference PEM files
+# Signers can use local, unencrypted keys, PKCS#11 URIs or reference PEM files
 # Reference PEM files use IMX_SIGN_PKCS11_MODULE and IMX_SIGN_PKCS11_PIN_FILE on the host
+# IMX_SIGN_PKCS11_URI selects an HSM key for the generated YAML
+# Keep SOFTHSM2_CONF from the build environment
 #
 # Set IMX_SIGN_PQC_ENABLE = "1" to add a second SRK table and signer
 # IMX_SIGN_PQC_KEYDIR defaults to ${IMX_SIGN_KEYDIR}/mldsa
@@ -46,6 +48,7 @@ IMX_SIGN_SRK_FILES ??= "${IMX_SIGN_KEYDIR}/srk0.pub \
 IMX_SIGN_HASH_ALGORITHM ??= "default"
 IMX_SIGN_PKCS11_MODULE ??= ""
 IMX_SIGN_PKCS11_PIN_FILE ??= ""
+IMX_SIGN_PKCS11_URI ??= ""
 
 IMX_SIGN_PQC_ENABLE ??= "0"
 IMX_SIGN_PQC_KEYDIR ??= "${IMX_SIGN_KEYDIR}/mldsa"
@@ -126,6 +129,8 @@ def imx_sign_config(d):
                                for key in d.getVar("IMX_SIGN_SRK_FILES").split()],
         "IMX_SIGN_HASH_ALGORITHM": d.getVar("IMX_SIGN_HASH_ALGORITHM"),
     }
+    if d.getVar("IMX_SIGN_PKCS11_URI"):
+        values["IMX_SIGN_PRIVATE_KEY"] = d.getVar("IMX_SIGN_PKCS11_URI")
     template = textwrap.dedent("""\
         family: @IMX_SPSDK_FAMILY@
         revision: @IMX_SPSDK_REVISION@
@@ -186,7 +191,22 @@ def imx_ahab_validate(d):
 
 def imx_ahab_setup(d, task):
     import os
+    import re
 
+    uri = d.getVar("IMX_SIGN_PKCS11_URI")
+    if uri:
+        if d.getVar("IMX_SIGN_CONFIG"):
+            bb.fatal("Use IMX_SIGN_PKCS11_URI with generated YAML, or a URI or reference PEM in IMX_SIGN_CONFIG")
+        # Keep URIs percent-encoded and reject embedded PINs
+        if not re.fullmatch(r"pkcs11:[A-Za-z0-9._~%:;=@!&()+,/-]+", uri):
+            bb.fatal("Set IMX_SIGN_PKCS11_URI to a percent-encoded PKCS#11 URI without query parameters")
+        fields = uri[7:].split(";")
+        allowed = {"token", "serial", "manufacturer", "model", "object", "id", "type"}
+        if "type=private" not in fields or any(field.split("=", 1)[0] not in allowed for field in fields):
+            bb.fatal("IMX_SIGN_PKCS11_URI needs type=private and must not contain PIN fields")
+        module = d.getVar("IMX_SIGN_PKCS11_MODULE") or ""
+        if module != "softhsm" and not (os.path.isabs(module) and os.path.isfile(module)):
+            bb.fatal("IMX_SIGN_PKCS11_MODULE must be 'softhsm' or an existing absolute library path")
     imx_validate_signing_keys(d)
     # BitBake does not walk directory symlinks when hashing inputs
     for name in ("IMX_SIGN_KEYDIR", "IMX_SIGN_PQC_KEYDIR"):
@@ -197,7 +217,9 @@ def imx_ahab_setup(d, task):
     if d.getVar("IMX_SIGN_CONFIG"):
         d.appendVarFlag(task, "file-checksums", " %s:True" % d.getVar("IMX_SIGN_CONFIG"))
     d.appendVar("DEPENDS", " python3-spsdk-native python3-spsdk-pkcs11-native")
-    d.appendVarFlag(task, "vardeps", " IMX_SIGN_PKCS11_MODULE IMX_SIGN_PKCS11_PIN_FILE")
+    if d.getVar("IMX_SIGN_PKCS11_MODULE") == "softhsm":
+        d.appendVar("DEPENDS", " softhsm-native")
+    d.appendVarFlag(task, "vardeps", " IMX_SIGN_PKCS11_URI IMX_SIGN_PKCS11_MODULE IMX_SIGN_PKCS11_PIN_FILE")
 
 def imx_ahab_run(d, source, output, options):
     import json
@@ -222,6 +244,9 @@ def imx_ahab_run(d, source, output, options):
     environment["SPSDK_DEBUG_LOG_FILE"] = os.path.join(d.getVar("T"), "spsdk-debug.log")
     for name in ("IMX_SIGN_PKCS11_MODULE", "IMX_SIGN_PKCS11_PIN_FILE"):
         environment[name] = d.getVar(name) or ""
+    if environment["IMX_SIGN_PKCS11_MODULE"] == "softhsm":
+        environment["IMX_SIGN_PKCS11_MODULE"] = os.path.join(
+            d.getVar("STAGING_LIBDIR_NATIVE"), "softhsm", "libsofthsm2.so")
     bb.note("Signing %s (%s, %s)" % (
         source, d.getVar("IMX_SPSDK_FAMILY"), d.getVar("IMX_SPSDK_REVISION")))
     result = subprocess.run(command + options,
@@ -308,7 +333,12 @@ python imx_sign_ahab() {
             keys = srk_table.get("srk_array", [])
             if not isinstance(keys, list) or len(keys) != 4:
                 raise ValueError(f"{name}.srk_array must contain four public keys or certificates")
-            config[signer] = key_path(config.get(signer), directory, setting)
+            if signer == "signer" and str(config.get(signer, "")).startswith("pkcs11:"):
+                from spsdk_pkcs11_pem import parse_uri
+
+                parse_uri(config[signer])
+            else:
+                config[signer] = key_path(config.get(signer), directory, setting)
             srk_table["srk_array"] = [key_path(key, directory, setting) for key in keys]
         config.check(AHABImage.get_signing_validation_schemas(FamilyRevision(family, revision)),
                      check_unknown_props=True)
