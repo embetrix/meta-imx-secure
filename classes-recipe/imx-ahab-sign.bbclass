@@ -11,7 +11,8 @@
 # IMX_SIGN_PRIVATE_KEY defaults to srk${IMX_SIGN_SRK_ID}.pem and must match that entry
 # Key paths may be absolute or relative to their configured key directory
 # Keys must stay inside that directory so changes trigger signing
-# Private keys must be local, unencrypted files
+# Private keys must be local, unencrypted files or PKCS#11 reference PEM files
+# Reference PEM files use IMX_SIGN_PKCS11_MODULE and IMX_SIGN_PKCS11_PIN_FILE on the host
 #
 # Set IMX_SIGN_PQC_ENABLE = "1" to add a second SRK table and signer
 # IMX_SIGN_PQC_KEYDIR defaults to ${IMX_SIGN_KEYDIR}/mldsa
@@ -43,6 +44,8 @@ IMX_SIGN_SRK_FILES ??= "${IMX_SIGN_KEYDIR}/srk0.pub \
                         ${IMX_SIGN_KEYDIR}/srk2.pub \
                         ${IMX_SIGN_KEYDIR}/srk3.pub"
 IMX_SIGN_HASH_ALGORITHM ??= "default"
+IMX_SIGN_PKCS11_MODULE ??= ""
+IMX_SIGN_PKCS11_PIN_FILE ??= ""
 
 IMX_SIGN_PQC_ENABLE ??= "0"
 IMX_SIGN_PQC_KEYDIR ??= "${IMX_SIGN_KEYDIR}/mldsa"
@@ -193,7 +196,8 @@ def imx_ahab_setup(d, task):
         d.appendVarFlag(task, "file-checksums", " %s:True" % d.getVar(name))
     if d.getVar("IMX_SIGN_CONFIG"):
         d.appendVarFlag(task, "file-checksums", " %s:True" % d.getVar("IMX_SIGN_CONFIG"))
-    d.appendVar("DEPENDS", " python3-spsdk-native")
+    d.appendVar("DEPENDS", " python3-spsdk-native python3-spsdk-pkcs11-native")
+    d.appendVarFlag(task, "vardeps", " IMX_SIGN_PKCS11_MODULE IMX_SIGN_PKCS11_PIN_FILE")
 
 def imx_ahab_run(d, source, output, options):
     import json
@@ -216,6 +220,8 @@ def imx_ahab_run(d, source, output, options):
     environment["PYTHONNOUSERSITE"] = "1"
     environment["SPSDK_CACHE_FOLDER"] = os.path.join(d.getVar("T"), "spsdk-cache")
     environment["SPSDK_DEBUG_LOG_FILE"] = os.path.join(d.getVar("T"), "spsdk-debug.log")
+    for name in ("IMX_SIGN_PKCS11_MODULE", "IMX_SIGN_PKCS11_PIN_FILE"):
+        environment[name] = d.getVar(name) or ""
     bb.note("Signing %s (%s, %s)" % (
         source, d.getVar("IMX_SPSDK_FAMILY"), d.getVar("IMX_SPSDK_REVISION")))
     result = subprocess.run(command + options,
@@ -307,14 +313,25 @@ python imx_sign_ahab() {
         config.check(AHABImage.get_signing_validation_schemas(FamilyRevision(family, revision)),
                      check_unknown_props=True)
         for signer, name, srk_table, directory, setting in key_sets:
-            # Reject encrypted keys without opening an interactive password prompt
-            private = PrivateKey.load(config[signer])
+            from spsdk_pkcs11_pem import prepare_signer
+
             public_keys = [extract_public_key(key) for key in srk_table["srk_array"]]
-            for key, key_file in zip([private.get_public_key()] + public_keys,
-                                     [config[signer]] + srk_table["srk_array"]):
+            for key, key_file in zip(public_keys, srk_table["srk_array"]):
                 if isinstance(key, PublicKeyMLDSA) and key.level == 2:
                     raise ValueError(f"ML-DSA-44 is not supported for AHAB signing: {key_file}. "
                                      "Use ML-DSA-65 or ML-DSA-87 keys")
+            selected = public_keys[config.get_int("used_srk_id", 0)]
+            provider = prepare_signer(config[signer], selected,
+                                      srk_table.get("hash_algorithm", "default"))
+            if provider:
+                config[signer] = provider
+                continue
+            # Reject encrypted keys without opening an interactive password prompt
+            private = PrivateKey.load(config[signer])
+            public = private.get_public_key()
+            if isinstance(public, PublicKeyMLDSA) and public.level == 2:
+                raise ValueError(f"ML-DSA-44 is not supported for AHAB signing: {config[signer]}. "
+                                 "Use ML-DSA-65 or ML-DSA-87 keys")
             if not private.verify_public_key(public_keys[config.get_int("used_srk_id", 0)]):
                 raise ValueError(f"{signer} does not match {name}.srk_array at used_srk_id")
         return config
