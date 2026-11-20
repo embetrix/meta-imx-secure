@@ -4,7 +4,7 @@
 
 Use this guide when adding an update agent. See the [partition layout](architecture.md#partition-layout) for storage sizes and mount points.
 
-The layer provides A/B slot selection and storage mappings. The integrator must handle update delivery, verification, activation, confirmation and recovery. Optional SWUpdate support provides an example implementation with confirmation and rollback helpers.
+The layer provides A/B slot selection and storage mappings. The integrator must handle update delivery, activation policy, boot attempt tracking, health checks, confirmation and recovery. Optional SWUpdate support provides an example for verifying and installing bundles.
 
 ## Slot layout and boot selection
 
@@ -27,28 +27,28 @@ See [build artifacts](building-images.md#build-artifacts) for the files produced
 
 ## SWUpdate example implementation
 
-> **WARNING:** This example is a proposal and is not production-ready. The integrator must adapt and validate it for the product's update and recovery workflow.
+> **NOTE:** This integration provides bundle verification and installation. The integrator must implement and validate the product's boot attempt tracking, health checks, update confirmation and recovery policy.
 
 Optional SWUpdate support provides CMS-signed, AES-encrypted `.swu` bundles through `imx-secure-image-base-update`. Install a bundle with `swupdate-client /path/to/imx-secure-image-base-update.swu`.
 
-The example counts boot attempts in initramfs and confirms updates after userspace health checks. Rollback needs a remaining fallback firmware copy. Development updates invalidate the old copy to allow reused software versions. Production updates keep it for fallback.
+The example installs the inactive slot and reboots automatically after a successful update. Development updates invalidate the old firmware copy to allow reused software versions. Production updates keep it for integrator-managed fallback and need a higher `SW_VERSION` for ROM to prefer the new firmware. The bundle does not write update state to the firmware environment, and initramfs selects slots from the bootloader arguments without tracking attempts or performing rollback.
 
-### Example SWUpdate workflow
+### Typical integrator workflow
+
+The integrator must implement and validate this flow for the board. See [SWUpdate best practice: update concept](https://sbabic.github.io/swupdate/swupdate-best-practise.html#update-concept) for the update state machine.
 
 ```mermaid
 flowchart TD
-    BUNDLE["Decrypt and verify update bundle"] --> INSTALL["Install FIT, root filesystem and imx-boot<br/>in the inactive slot"]
-    INSTALL --> PENDING["Mark update pending<br/>Reset boot count"]
-    PENDING --> BOOT["Reboot into updated slot"]
-    BOOT --> CHECK["Count boot attempt in initramfs"]
-    CHECK -->|Boot limit not reached| HEALTH{"Userspace health checks pass?"}
-    HEALTH -->|Yes| CONFIRM["Confirm update<br/>Clear pending state and boot count"]
-    HEALTH -->|No| WAIT["Leave update pending"]
-    WAIT -.->|On the next reboot| CHECK
-    CHECK -->|Boot limit reached| ROLLBACK["Attempt rollback to the previous slot"]
-    ROLLBACK --> REPORT["Invalidate failed firmware and reboot<br/>Report rollback in userspace"]
+    BUNDLE["Decrypt and verify update bundle"] --> PREPARE["Record update in progress<br/>Keep the previous working slot"]
+    PREPARE --> INSTALL["Install FIT, root filesystem and imx-boot<br/>in the inactive slot"]
+    INSTALL --> PENDING["Mark update pending<br/>Reset trial boot count"]
+    PENDING --> REBOOT["Reboot"]
+    REBOOT --> ROM["ROM selects boot firmware by SW_VERSION"]
+    ROM --> TRIAL["Bootloader records trial attempt<br/>Boot the matching FIT and root filesystem"]
+    TRIAL --> HEALTH{"Boot and application health checks pass?"}
+    HEALTH -->|Yes| CONFIRM["Confirm update<br/>Clear pending state and trial count"]
+    HEALTH -->|No or watchdog timeout| LIMIT{"Trial limit reached?"}
+    LIMIT -->|No| REBOOT
+    LIMIT -->|Yes| FALLBACK["Arrange fallback using board-specific recovery<br/>Reboot into the previous working slot"]
+    FALLBACK --> REPORT["Record and report failed update"]
 ```
-
-### Example limitations
-
-Power loss or ROM fallback can cause slot-mismatch reboot loops. Failures before initramfs are not counted, and failed health checks leave the update pending without retrying or rebooting. Use a strictly higher `SW_VERSION` for production bundles, including prod-to-prod updates. Validate interrupted updates and recovery on the target hardware.
