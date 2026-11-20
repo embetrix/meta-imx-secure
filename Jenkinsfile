@@ -15,6 +15,7 @@ pipeline {
         choice choices: ['dev', 'prod'], description: 'select security profile', name: 'SECURITY_PROFILE'
         choice choices: ['no', 'yes'], description: 'clean workspace before building', name: 'CLEAN'
         string defaultValue: '7e17c332-9a25-4c95-90a7-f487ebf44714', description: 'i.MX secure boot signing keys', name: 'SIGNING_KEYS_CREDENTIAL'
+        booleanParam defaultValue: false, description: 'use AHAB SoftHSM signing keys', name: 'AHAB_SOFTHSM'
     }
 
     environment {
@@ -41,12 +42,24 @@ pipeline {
                     sh 'tar xzf "$KEYS_TARBALL"'
                 }
                 sh 'tools/generate-signing-keys.sh'
+                script {
+                    env.KAS_BUILD_CONFIG = 'kas-imx-secure.yml:kas-signing-keys.yml'
+                    if (params.AHAB_SOFTHSM) {
+                        sh '''
+                            set -eu
+                            if [ ! -d imx-softhsm-ahab ] || [ ! -f kas-softhsm-ahab.yml ]; then
+                                tools/generate-softhsm-ahab-keys.py
+                            fi
+                        '''
+                        env.KAS_BUILD_CONFIG += ':kas-softhsm-ahab.yml'
+                    }
+                }
             }
         }
 
         stage('Build image') {
             steps {
-                sh 'kas build --force-checkout --update kas-imx-secure.yml:kas-signing-keys.yml'
+                sh 'kas build --force-checkout --update "$KAS_BUILD_CONFIG"'
                 archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-update-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.swu," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.sign," +
