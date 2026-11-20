@@ -3,6 +3,9 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
+# Install the generated defaults at libubootenv's fallback path
+UBOOT_INITIAL_ENV = "u-boot-initial-env"
+
 IMX_FIT_AHAB_ENABLE ??= "0"
 
 # Use the BSP boot flow for signed AHAB targets
