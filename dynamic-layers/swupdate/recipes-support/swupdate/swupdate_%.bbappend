@@ -3,6 +3,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI:append = " file://swupdate.cfg"
+DEPENDS:append = " p11-kit"
 RDEPENDS:${PN}:append = " libubootenv-config"
 
 python imx_install_swupdate_keys() {
@@ -18,15 +19,22 @@ python imx_install_swupdate_keys() {
     shutil.copyfile(d.getVar('SWUPDATE_CMS_CERT'), os.path.join(config, 'swupdate.crt'))
     for name in ('swupdate.cfg', 'swupdate.crt'):
         os.chmod(os.path.join(config, name), 0o644)
-    # WARNING: Store the key from SWUPDATE_AES_FILE in secure storage for production
-    # and use it from there!
-    # This currently installs it as a plain file in the root filesystem
-    # OP-TEE PKCS#11 alternative: enable CONFIG_PKCS11 with p11-kit and set
-    # decrypt-provider = "pkcs11" then install a key file containing the
-    # provisioned key's PKCS#11 URI (libckteec.so.0) and IV instead of the plain key
+    # Token-backed decryption requires decrypt-provider = "pkcs11"
+    # The runtime key file contains the provisioned key URI followed by the IV
     # https://sbabic.github.io/swupdate/encrypted_images.html#decrypting-with-a-pkcs-11-token
     with open(d.getVar('SWUPDATE_AES_FILE')) as stream:
         aes = dict(line.strip().split('=', 1) for line in stream if line.strip())
+    if d.getVar('IMX_SECURITY_PROFILE') == 'prod' and not aes['key'].startswith('pkcs11:'):
+        bb.warn('SWUpdate installs a plaintext AES key in the production image. '
+                'Provision the same key in an SMW or OP-TEE PKCS#11 token and use '
+                'its URI in the runtime AES key file and '
+                'set decrypt-provider = "pkcs11". Example SMW URI: '
+                'pkcs11:token=smw;id=%14%37%04%28%e6%9c%7c%dd;'
+                'object=swupdate-aes-key-14370428e69c7cdd;type=secret-key '
+                'or OP-TEE: pkcs11:token=optee;id=%01;object=swupdate-aes-key;'
+                'type=secret-key. Replace the token, ID and label with the '
+                'provisioned values and configure the matching PKCS#11 module. '
+                'Keep SWUPDATE_AES_FILE for build-time bundle encryption.')
     keyfile = os.path.join(config, 'swupdate-aes.key')
     with open(keyfile, 'w') as stream:
         stream.write('%s %s\n' % (aes['key'], aes['iv']))
