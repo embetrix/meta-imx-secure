@@ -30,10 +30,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 do_install() {
     install -m 0755 ${UNPACKDIR}/imx-secure-initramfs-init.sh ${D}/init
-    sed -i -e 's|__ROOTFS_TYPE___|${ROOTFS_TYPE}|g' \
-           -e 's|__IMX_BOOT_SEEK__|${IMX_BOOT_SEEK}|g' \
-           -e 's|__IMX_BOOT_SECONDARY_OFFSET__|${IMX_BOOT_SECONDARY_OFFSET}|g' \
-           -e 's|__IMX_BOOT_MAX_SIZE__|${IMX_BOOT_MAX_SIZE}|g' ${D}/init
+    sed -i 's|__ROOTFS_TYPE___|${ROOTFS_TYPE}|g' ${D}/init
     install -d ${D}${libexecdir}/imx-secure
     install -m 0644 ${UNPACKDIR}/init-common.sh ${D}${libexecdir}/imx-secure/init-common.sh
     install -m 0644 ${UNPACKDIR}/init-ab-slot.sh ${D}${libexecdir}/imx-secure/init-ab-slot.sh
