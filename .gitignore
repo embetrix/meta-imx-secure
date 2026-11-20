@@ -19,5 +19,5 @@
 *.py[co]
 __pycache__/
 
-/tests/
+test_*.py
 AGENTS.md
