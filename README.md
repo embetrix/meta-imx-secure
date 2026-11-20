@@ -57,6 +57,7 @@ Open a pull request to add a tested board.
 | [Device setup](docs/device-setup.md) | SD card flashing, development login and SSH certificates |
 | [Security architecture](docs/architecture.md) | Boot authentication, initramfs and partition layout |
 | [AHAB provisioning](docs/ahab-provisioning.md) | SRK fuse scripts, programming and verification |
+| [HSM signing](docs/hsm-signing.md) | AHAB signing with PKCS#11 key references and HSM keys |
 | [OTA update integration](docs/ota-updates.md) | SWUpdate bundles, A/B slots and boot firmware selection |
 | [Layer integration](docs/layer-integration.md) | Adding the layer to an existing Yocto build |
 

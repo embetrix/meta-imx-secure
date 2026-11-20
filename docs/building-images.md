@@ -18,6 +18,8 @@ The helper creates AHAB, FIT, kernel module, IMA/EVM, AVB, SSH CA and SWUpdate k
 
 Keep private keys secure and maintain an offline backup. Run the helper again if you move the checkout or key directory to update the generated paths.
 
+To keep AHAB private keys on a PKCS#11 token, follow [HSM signing](hsm-signing.md).
+
 ## 3. Select the machine and profile
 
 Choose a `MACHINE` from the [tested boards](../README.md#tested-hardware). Use that value in place of `<MACHINE>` in the commands below.
