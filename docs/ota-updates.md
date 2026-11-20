@@ -23,6 +23,8 @@ i.MX ROM selects between redundant boot firmware image sets using container soft
 
 Keep each firmware copy aligned with its matching FIT and root filesystem slot. The WIC image writes only the first firmware copy, so the update or provisioning process must populate the second copy. See [Partition layout](architecture.md#partition-layout) for the default locations.
 
+> **NOTE:** An alternative is to store the boot firmware copies in the eMMC hardware boot partitions (`boot0` and `boot1`) with FIT and root filesystem slots in the user area.
+
 See [build artifacts](building-images.md#build-artifacts) for the files produced by the build.
 
 ## SWUpdate example implementation
