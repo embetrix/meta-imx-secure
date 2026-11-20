@@ -56,13 +56,13 @@ The [WIC layout](../files/wic/imx-boot-secure-bootpart.wks.in) writes `imx-boot`
 | `root_a` | 520 MiB | 1024 MiB | `/` | Initial active encrypted and verified root |
 | `boot_b` | 1544 MiB | 512 MiB | `/var/boot-update` | Inactive boot slot |
 | `root_b` | 2056 MiB | 1024 MiB | Not mounted | Plain root image for first-boot migration, then inactive root slot |
-| `secdata` | 3080 MiB | 512 MiB | `/var/secdata` | Key blobs, OP-TEE storage, SMW database and ELE storage |
+| `secdata` | 3080 MiB | 512 MiB | `/var/secdata` | Key blobs, OP-TEE storage and ELE storage |
 | `data` | 3592 MiB | 4096 MiB | `/var/data` | Encrypted persistent storage for writable paths via volatile-binds |
 
 Set partition sizes with the BitBake variables `BOOT_PART_SZ`, `ROOT_PART_SZ`, `SECDATA_PART_SZ` and `DATA_PART_SZ` in `local.conf`.
 
 Mount points above show slot A active. See [OTA update integration](ota-updates.md) for redundant boot images and A/B slot handling.
 
-`secdata` is a plain ext4 filesystem. It holds protected key blobs in `keys/`, OP-TEE storage in `tee/`, the SMW database in `smw/` and ELE persistent storage in `ele/`.
+`secdata` is a plain ext4 filesystem. It holds protected key blobs in `keys/`, OP-TEE storage in `tee/` and ELE persistent storage in `ele/`.
 
 See [AHAB provisioning](ahab-provisioning.md) for device trust anchors and [OTA updates](ota-updates.md) for inactive-slot handling.
