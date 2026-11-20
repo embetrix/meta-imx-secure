@@ -6,6 +6,10 @@ software = {
     version = "@@IMX_SECURE_VERSION@@";
     hardware-compatibility: [ "@@MACHINE@@" ];
 
+    /* Update state and recovery policy belong to the integrator */
+    bootloader_transaction_marker = false;
+    bootloader_state_marker = false;
+
     embedded-script = "
         local swupdate = require('swupdate')
 
@@ -38,12 +42,6 @@ software = {
             end
             swupdate.trace(string.format('slot hook: select %s device=%s offset=0x%x target=%s',
                 image.filename, image.device, image.offset, target))
-            return true, image
-        end
-
-        function set_target_slot(image)
-            image.version = target_slot()
-            swupdate.trace('slot hook: bootenv ' .. image.name .. '=' .. image.version)
             return true, image
         end
 
@@ -99,26 +97,6 @@ software = {
             hook = "set_active_boot_offset";
             encrypted = true;
             sha256 = "$swupdate_get_sha256(imx-boot-zeros)";
-        }
-    );
-
-    bootenv: (
-        {
-            name = "rollback_slot";
-            value = ""; /* Clear the previous rollback when installing a new update */
-        },
-        {
-            name = "bootcount";
-            value = "0";
-        },
-        {
-            name = "upgrade_available";
-            value = "1";
-        },
-        {
-            name = "boot_slot";
-            value = "x"; /* Set by the hook */
-            hook = "set_target_slot";
         }
     );
 

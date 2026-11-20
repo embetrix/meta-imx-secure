@@ -8,7 +8,6 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 inherit packagegroup
 
 RDEPENDS:${PN} = " \
-    imx-update-confirm \
     swupdate \
     swupdate-client \
     swupdate-ipc \
