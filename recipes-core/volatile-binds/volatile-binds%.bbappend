@@ -9,6 +9,7 @@ VOLATILE_BINDS:append = "\
 ${localstatedir}/data${localstatedir}/log           ${localstatedir}/log\n\
 ${localstatedir}/data${sysconfdir}/ssh/keys         ${sysconfdir}/ssh/keys\n\
 ${localstatedir}/data${sysconfdir}/systemd/network/ ${sysconfdir}/systemd/network/\n\
+${@bb.utils.contains('MACHINE_FEATURES', 'optee', '${localstatedir}/data${datadir}/smw ${datadir}/smw\\n', '', d)}\
 ${@bb.utils.contains('MACHINE_FEATURES', 'wifi', '${localstatedir}/data${sysconfdir}/wpa_supplicant ${sysconfdir}/wpa_supplicant\\n', '', d)}\
 ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', '${localstatedir}/data${ROOT_HOME} ${ROOT_HOME}\\n', '', d)}"
 
