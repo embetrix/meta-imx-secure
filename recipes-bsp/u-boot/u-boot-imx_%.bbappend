@@ -12,6 +12,7 @@ IMX_FIT_BOOT_CONFIG ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', \
                                     'fit-mmc.cfg', d)}"
 
 SRC_URI:append = " file://fit.cfg \
+                   file://env-mmc.cfg \
                    file://env-fdt.cfg \
                    file://mmc-boot-parts.cfg \
                    file://${IMX_FIT_BOOT_CONFIG} \
