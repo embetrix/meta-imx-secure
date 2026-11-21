@@ -1,0 +1,23 @@
+uuu_version 1.5.233
+
+# Run from the @MACHINE@ deploy directory
+# This overwrites eMMC with the deployed WIC image
+
+# Boot the deployed image into RAM
+SDPS: boot -f @BOOTLOADER@ -scanlimited 0x800000
+SDPV: delay 1000
+SDPV: write -f @BOOTLOADER@ -skipspl -scanlimited 0x800000
+SDPV: jump -scanlimited 0x800000
+
+# Select the eMMC user area
+FB: ucmd setenv fastboot_dev mmc
+FB: ucmd setenv mmcdev ${emmc_dev}
+FB: ucmd mmc dev ${emmc_dev} 0
+
+# The WIC already contains the boot firmware and disk partitions
+# The /* suffix tells UUU to decompress the gzip stream
+FB: flash -raw2sparse -bmap @IMAGE@.wic.bmap all @IMAGE@.wic.gz/*
+
+# Boot from the user area to match this layer's disk layout
+FB: ucmd mmc partconf ${emmc_dev} 0 7 0
+FB: done

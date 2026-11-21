@@ -54,6 +54,7 @@ Artifacts are written to `build/tmp/deploy/images/<MACHINE>/`:
 | --- | --- |
 | `imx-secure-image-base-<MACHINE>.rootfs.wic.gz` | Complete disk image |
 | `imx-secure-image-base-<MACHINE>.rootfs.wic.bmap` | Block map for flashing |
+| `flash-emmc-<MACHINE>.uuu` | UUU script for flashing eMMC using the WIC and block map |
 | `imx-secure-image-base-<MACHINE>.rootfs.erofs.avbverity.gz` | Root filesystem with AVB metadata and verity data |
 | `imx-secure-image-base-<MACHINE>.rootfs.sbom-cve-check.spdx.json` | SPDX SBOM with CVE scan results, production builds only |
 | `fitImage` | Signed FIT containing Linux, the bundled initramfs and device trees |

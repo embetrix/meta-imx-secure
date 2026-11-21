@@ -4,9 +4,11 @@
 
 Flash an image and set up login access. First, follow [building images](building-images.md) to create the image and signing keys.
 
-Install `bmaptool` and `ssh-keygen` on the host. Use a **16 GB or larger SD card** with the default partition sizes. Run the commands from the layer directory and replace `<MACHINE>` with the machine used for your build.
+Install `ssh-keygen` on the host, plus `bmaptool` for SD card flashing or SPSDK's `nxpuuu` for eMMC flashing. Use **16 GB or larger storage** with the default partition sizes. Run the commands from the layer directory and replace `<MACHINE>` with the machine used for your build.
 
-## 1. Flash the SD card
+## 1. Flash the image
+
+### SD card
 
 Unmount the SD card partitions, then write the complete disk image:
 
@@ -17,6 +19,21 @@ sudo bmaptool copy \
 ```
 
 Replace `/dev/sdX` with the **whole SD card device**. This overwrites its contents.
+
+### eMMC
+
+Connect the board's USB download port to the host and select USB download boot mode. The deployed bootloader must have fastboot and UUU support enabled. The `prod` profile disables them.
+
+Run the generated script from the deploy directory:
+
+```sh
+cd "build/tmp/deploy/images/<MACHINE>"
+nxpuuu script "flash-emmc-<MACHINE>.uuu"
+```
+
+This overwrites eMMC. The script uses relative artifact filenames and selects eMMC user-area boot. After flashing, select eMMC boot mode and reset the board.
+
+### First boot
 
 On first boot, the initramfs creates the storage keys, copies the plaintext root filesystem from slot B into encrypted slot A and formats the encrypted data volume. This takes longer than later boots.
 
