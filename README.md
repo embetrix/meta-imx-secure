@@ -54,7 +54,7 @@ Open a pull request to add a tested board.
 | Guide | Description |
 | --- | --- |
 | [Building images](docs/building-images.md) | Host tools, signing keys, profiles, kas builds and build artifacts |
-| [Device setup](docs/device-setup.md) | SD card flashing, development login and SSH certificates |
+| [Device setup](docs/device-setup.md) | SD card and eMMC flashing, development login and SSH certificates |
 | [Security architecture](docs/architecture.md) | Boot authentication, initramfs and partition layout |
 | [AHAB provisioning](docs/ahab-provisioning.md) | SRK fuse scripts, programming and verification |
 | [HSM signing](docs/hsm-signing.md) | AHAB signing with PKCS#11 key references and HSM keys |
