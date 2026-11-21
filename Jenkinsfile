@@ -62,6 +62,7 @@ pipeline {
                 sh 'kas build --force-checkout --update "$KAS_BUILD_CONFIG"'
                 archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-update-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.swu," +
+                                            "build/tmp/deploy/images/${params.MACHINE}/flash-emmc-${params.MACHINE}.uuu," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.sign," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.fuses/*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/fitImage",
