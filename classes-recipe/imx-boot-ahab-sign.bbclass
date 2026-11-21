@@ -24,7 +24,7 @@
 # Set IMX_SIGN_DEBUG = "1" to show signing details in the build console
 #
 # Shared key settings and SPSDK helpers
-inherit imx-ahab-sign
+inherit imx-ahab-sign-common
 
 # Select the memory type for each UBOOT_CONFIG entry, with a fallback for raw SD/eMMC images
 # Override the fallback or add mappings such as IMX_SPSDK_MEMORY_TYPE[custom] = "flexspi_nor"

@@ -35,7 +35,7 @@ The layer targets NXP i.MX8 and i.MX9 boards. AHAB signing supports these SoCs:
 
 Feature support depends on the board and BSP. Boards outside the tested list may need further adaptation.
 
-PQC support depends on the SoC, silicon revision and container format. See [NXP's i.MX95 B0 example](https://spsdk.readthedocs.io/en/latest/examples/ahab/imx95/imx95_ahab_sign.html) and the [layer signing options](classes-recipe/imx-ahab-sign.bbclass). HABv4 signing is not implemented yet but is planned for the future.
+PQC support depends on the SoC, silicon revision and container format. See [NXP's i.MX95 B0 example](https://spsdk.readthedocs.io/en/latest/examples/ahab/imx95/imx95_ahab_sign.html) and the [layer signing options](classes-recipe/imx-ahab-sign-common.bbclass). HABv4 signing is not implemented yet but is planned for the future.
 
 ### Tested hardware
 

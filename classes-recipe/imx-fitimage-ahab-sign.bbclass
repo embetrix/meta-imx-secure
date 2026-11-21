@@ -7,7 +7,7 @@
 # Keep it separate from the container buffer and kernel decompression area
 # This class only deploys fitImage.ahab and does not change the boot flow
 
-inherit imx-ahab-sign
+inherit imx-ahab-sign-common
 
 IMX_FIT_AHAB_LOAD_ADDRESS ??= ""
 IMX_FIT_AHAB_CORE ??= "cortex-a55"
