@@ -83,4 +83,4 @@ IMAGE_CLASSES += "${@bb.utils.contains('IMAGE_FSTYPES', 'wic.gz wic.bmap', 'imx-
 BOOT_PART_SZ ?= "512M"
 ROOT_PART_SZ ?= "1024M"
 SECDATA_PART_SZ ?= "512M"
-DATA_PART_SZ ?= "4096M"
+DATA_PART_SZ ?= "3072M"

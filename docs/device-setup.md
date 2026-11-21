@@ -4,7 +4,7 @@
 
 Flash an image and set up login access. First, follow [building images](building-images.md) to create the image and signing keys.
 
-Install `ssh-keygen` on the host, plus `bmaptool` for SD card flashing or SPSDK's `nxpuuu` for eMMC flashing. Use **16 GB or larger storage** with the default partition sizes. Run the commands from the layer directory and replace `<MACHINE>` with the machine used for your build.
+Install `ssh-keygen` on the host, plus `bmaptool` for SD card flashing or SPSDK's `nxpuuu` for eMMC flashing. Use **8 GB or larger storage** with the default partition sizes. The disk image is about 6.51 GiB, including a 3 GiB data partition. Run the commands from the layer directory and replace `<MACHINE>` with the machine used for your build.
 
 ## 1. Flash the image
 

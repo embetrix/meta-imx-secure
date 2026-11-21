@@ -57,7 +57,9 @@ The [WIC layout](../files/wic/imx-boot-secure-bootpart.wks.in) writes `imx-boot`
 | `boot_b` | 1544 MiB | 512 MiB | `/var/boot-update` | Inactive boot slot |
 | `root_b` | 2056 MiB | 1024 MiB | Not mounted | Plain root image for first-boot migration, then inactive root slot |
 | `secdata` | 3080 MiB | 512 MiB | `/var/secdata` | Key blobs, OP-TEE storage and ELE storage |
-| `data` | 3592 MiB | 4096 MiB | `/var/data` | Encrypted persistent storage for writable paths via volatile-binds |
+| `data` | 3592 MiB | 3072 MiB | `/var/data` | Encrypted persistent storage for writable paths via volatile-binds |
+
+The default disk image is about 6.51 GiB and fits an 8 GB eMMC.
 
 Set partition sizes with the BitBake variables `BOOT_PART_SZ`, `ROOT_PART_SZ`, `SECDATA_PART_SZ` and `DATA_PART_SZ` in `local.conf`.
 
