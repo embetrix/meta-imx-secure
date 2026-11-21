@@ -31,7 +31,7 @@ cd "build/tmp/deploy/images/<MACHINE>"
 nxpuuu script "flash-emmc-<MACHINE>.uuu"
 ```
 
-This overwrites eMMC. The script uses relative artifact filenames and selects eMMC user-area boot. After flashing, select eMMC boot mode and reset the board.
+This overwrites eMMC and clears the old secondary boot firmware. The script uses relative artifact filenames and selects eMMC user-area boot. After flashing, select eMMC boot mode and reset the board.
 
 ### First boot
 
