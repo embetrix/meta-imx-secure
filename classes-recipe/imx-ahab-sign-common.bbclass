@@ -334,7 +334,7 @@ python imx_sign_ahab() {
             if not isinstance(keys, list) or len(keys) != 4:
                 raise ValueError(f"{name}.srk_array must contain four public keys or certificates")
             if signer == "signer" and str(config.get(signer, "")).startswith("pkcs11:"):
-                from spsdk_pkcs11_pem import parse_uri
+                from spsdk_pkcs11_signer import parse_uri
 
                 parse_uri(config[signer])
             else:
@@ -343,7 +343,7 @@ python imx_sign_ahab() {
         config.check(AHABImage.get_signing_validation_schemas(FamilyRevision(family, revision)),
                      check_unknown_props=True)
         for signer, name, srk_table, directory, setting in key_sets:
-            from spsdk_pkcs11_pem import prepare_signer
+            from spsdk_pkcs11_signer import prepare_signer
 
             public_keys = [extract_public_key(key) for key in srk_table["srk_array"]]
             for key, key_file in zip(public_keys, srk_table["srk_array"]):

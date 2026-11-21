@@ -8,14 +8,14 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=fe2a425fb1f291c670f58b9e3771878e"
 
 SRC_URI[sha256sum] = "fc7b61eed173a549fe84bb8c40b18660bc884ebccd46fe8ac83604ac6d0f9d6c"
 
-SRC_URI += "file://spsdk_pkcs11_pem.py"
+SRC_URI += "file://spsdk_pkcs11_signer.py"
 
 PYPI_PACKAGE = "spsdk_pkcs11"
 
 inherit pypi python_setuptools_build_meta
 
 do_install:append() {
-    install -m 0644 ${UNPACKDIR}/spsdk_pkcs11_pem.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+    install -m 0644 ${UNPACKDIR}/spsdk_pkcs11_signer.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
 RDEPENDS:${PN} += " \
