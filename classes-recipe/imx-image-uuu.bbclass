@@ -7,6 +7,7 @@ IMX_FLASH_EMMC_TEMPLATE ?= "${IMX_SECURE_BASE}/files/uuu/flash-emmc.uuu.in"
 # USB boot uses the untagged image, while the WIC keeps the tagged copy
 IMX_UUU_BOOTLOADER ?= "${@bb.utils.contains('IMX_SIGN_ENABLE', '1', 'imx-boot.sign', 'imx-boot', d)}"
 do_image_complete[file-checksums] += "${IMX_FLASH_EMMC_TEMPLATE}:True"
+do_image_complete[depends] += "imx-boot:do_deploy"
 IMAGE_POSTPROCESS_COMMAND += "imx_deploy_flash_emmc; "
 
 python imx_deploy_flash_emmc() {
@@ -21,10 +22,12 @@ python imx_deploy_flash_emmc() {
     if secondary_offset < primary_offset + boot_size or secondary_offset + boot_size > 8 * 1024 * 1024:
         bb.fatal("Secondary boot firmware must fit between the primary firmware area and boot_a")
 
+    # Jenkins archives real files, not the deploy symlinks
+    bootloader = (Path(d.getVar("DEPLOY_DIR_IMAGE")) / d.getVar("IMX_UUU_BOOTLOADER")).resolve(strict=True)
     script = Path(d.getVar("IMX_FLASH_EMMC_TEMPLATE")).read_text()
     script = script.replace("@MACHINE@", d.getVar("MACHINE"))
-    script = script.replace("@BOOTLOADER@", d.getVar("IMX_UUU_BOOTLOADER"))
-    script = script.replace("@IMAGE@", d.getVar("IMAGE_LINK_NAME"))
+    script = script.replace("@BOOTLOADER@", bootloader.name)
+    script = script.replace("@IMAGE@", d.getVar("IMAGE_NAME"))
     script = script.replace("@SECONDARY_BOOT_SIZE@", hex(boot_size))
     script = script.replace("@SECONDARY_BOOT_BLOCK@", hex(secondary_offset // 512))
     script = script.replace("@SECONDARY_BOOT_BLOCKS@", hex(boot_size // 512))
