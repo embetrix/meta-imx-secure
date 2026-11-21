@@ -33,12 +33,16 @@ setup_avb_verity() {
 	verity_name="$2"
 	verify_avb "$dev"
 
-	# Apply dm-verity corruption behavior from kernel cmdline
-	case " $(cat /proc/cmdline) " in
-		*" verity_mode=ignore "*) dm_table="$dm_table 1 ignore_corruption" ;;
-		*" verity_mode=panic "*)  dm_table="$dm_table 1 panic_on_corruption" ;;
-		*)                        dm_table="$dm_table 1 restart_on_corruption" ;;
-	esac
+	# Keep existing options and count restart_on_corruption in field 14
+	dm_table=$(printf '%s\n' "$dm_table" | awk '{
+		if (NF == 13) {
+			$14 = 1
+		} else {
+			if (NF < 14 || $14 !~ /^[0-9]+$/ || $14 != NF - 14) exit 1
+			$14 = $14 + 1
+		}
+		print $0 " restart_on_corruption"
+	}') || fatal "Invalid dm-verity option count"
 
 	klog "Setting up dm-verity as $verity_name..."
 	echo "$dm_table" | dmsetup create --readonly "$verity_name" \
