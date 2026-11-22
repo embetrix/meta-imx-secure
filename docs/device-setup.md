@@ -75,4 +75,4 @@ ssh -i ~/.ssh/id_ed25519 root@<device-ip>
 
 In production images, the SSH service waits for time synchronization. Ensure the device can reach its time servers so certificate validity checks use the correct time.
 
-For product integration, read the [security architecture](architecture.md), [AHAB provisioning guide](ahab-provisioning.md) and [OTA update guide](ota-updates.md). To use an existing Yocto build, see [layer integration](layer-integration.md).
+For product integration, read [boot flow](boot-flow.md), [partitioning](partitioning.md), [AHAB provisioning](ahab-provisioning.md) and [OTA update integration](ota-updates.md). To use an existing Yocto build, see [layer integration](layer-integration.md).

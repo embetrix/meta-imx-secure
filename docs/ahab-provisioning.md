@@ -114,4 +114,4 @@ Keep the device in OEM Open until fuse readback matches, authentication passes a
 
 See the [NXP nxpele guide](https://spsdk.readthedocs.io/en/latest/apps/nxpele.html#batch) and [fuse usage guide, section 4.5](https://www.nxp.com/docs/en/application-note/AN14954.pdf#page=10).
 
-See the [security architecture](architecture.md#secure-boot-authentication) for the boot authentication flow.
+See [boot flow](boot-flow.md#secure-boot-authentication) for the boot authentication steps.

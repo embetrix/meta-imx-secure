@@ -55,7 +55,8 @@ Open a pull request to add a tested board.
 | --- | --- |
 | [Building images](docs/building-images.md) | Host tools, signing keys, profiles, kas builds and build artifacts |
 | [Device setup](docs/device-setup.md) | SD card and eMMC flashing, development login and SSH certificates |
-| [Security architecture](docs/architecture.md) | Boot authentication, initramfs and partition layout |
+| [Boot flow](docs/boot-flow.md) | Boot authentication, A/B slot selection and initramfs |
+| [Partitioning](docs/partitioning.md) | Disk offsets, partition sizes and mount points |
 | [AHAB provisioning](docs/ahab-provisioning.md) | SRK fuse scripts, programming and verification |
 | [HSM signing](docs/hsm-signing.md) | AHAB signing with PKCS#11 key references and HSM keys |
 | [OTA update integration](docs/ota-updates.md) | SWUpdate bundles, A/B slots and boot firmware selection |
