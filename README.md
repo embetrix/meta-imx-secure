@@ -54,11 +54,11 @@ Open a pull request to add a tested board.
 | Guide | Description |
 | --- | --- |
 | [Building images](docs/building-images.md) | Host tools, signing keys, profiles, kas builds and build artifacts |
+| [HSM signing](docs/hsm-signing.md) | AHAB signing with PKCS#11 key references and HSM keys |
 | [Device setup](docs/device-setup.md) | SD card and eMMC flashing, development login and SSH certificates |
 | [Boot flow](docs/boot-flow.md) | Boot authentication, A/B slot selection and initramfs |
 | [Partitioning](docs/partitioning.md) | Disk offsets, partition sizes and mount points |
 | [AHAB provisioning](docs/ahab-provisioning.md) | SRK fuse scripts, programming and verification |
-| [HSM signing](docs/hsm-signing.md) | AHAB signing with PKCS#11 key references and HSM keys |
 | [OTA update integration](docs/ota-updates.md) | SWUpdate bundles, A/B slots and boot firmware selection |
 | [Layer integration](docs/layer-integration.md) | Adding the layer to an existing Yocto build |
 
