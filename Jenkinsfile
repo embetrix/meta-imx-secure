@@ -60,14 +60,15 @@ pipeline {
         stage('Build image') {
             steps {
                 sh 'kas build --force-checkout --update "$KAS_BUILD_CONFIG"'
-                archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.*," +
+                archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.wic.*," +
+                                            "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.sbom-cve-check.*.json," +
+                                            "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.manifest," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-update-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.swu," +
                                             "build/tmp/deploy/images/${params.MACHINE}/flash-emmc-${params.MACHINE}.uuu," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.sign," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.fuses/*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/fitImage," +
                                             "build/tmp/deploy/images/${params.MACHINE}/fitImage.ahab",
-                                 excludes: '**/*.ext3,**/*.ext4,**/*.testdata.json,**/*.wic,**/*.erofs,**/*.erofs.avbverity',
                                  followSymlinks: false,
                                  fingerprint: true,
                                  onlyIfSuccessful: true
