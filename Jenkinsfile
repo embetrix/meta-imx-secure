@@ -21,7 +21,6 @@ pipeline {
     environment {
         KAS_CLONE_DEPTH = '1'
         KAS_MACHINE = "${params.MACHINE}"
-        KAS_TARGET = 'imx-secure-image-base imx-secure-image-base-update'
         SECURITY_PROFILE = "${params.SECURITY_PROFILE}"
     }
 
@@ -53,14 +52,24 @@ pipeline {
                         '''
                         env.KAS_BUILD_CONFIG += ':kas-softhsm-ahab.yml'
                     }
+                    writeFile file: 'build/kas-ci.yml',
+                              text: "header:\n  version: 14\n" +
+                                    "machine: ${params.MACHINE}\n"
                 }
+                sh '''
+                    kas dump --force-checkout --update \
+                        --resolve-refs --resolve-local --resolve-env \
+                        "$KAS_BUILD_CONFIG:build/kas-ci.yml" > build/kas-resolved.yml
+                '''
             }
         }
 
         stage('Build image') {
             steps {
-                sh 'kas build --force-checkout --update "$KAS_BUILD_CONFIG"'
-                archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.wic.*," +
+                sh 'kas build build/kas-resolved.yml'
+                sh 'install -m 0644 build/kas-resolved.yml "build/tmp/deploy/images/$KAS_MACHINE/kas-resolved.yml"'
+                archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/kas-resolved.yml," +
+                                            "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.wic.*," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.sbom-cve-check.*.json," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.manifest," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-secure-image-base-update-${params.MACHINE}.rootfs-${params.SECURITY_PROFILE}_*.swu," +
