@@ -65,7 +65,8 @@ pipeline {
                                             "build/tmp/deploy/images/${params.MACHINE}/flash-emmc-${params.MACHINE}.uuu," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.sign," +
                                             "build/tmp/deploy/images/${params.MACHINE}/imx-boot*.fuses/*," +
-                                            "build/tmp/deploy/images/${params.MACHINE}/fitImage",
+                                            "build/tmp/deploy/images/${params.MACHINE}/fitImage," +
+                                            "build/tmp/deploy/images/${params.MACHINE}/fitImage.ahab",
                                  excludes: '**/*.ext3,**/*.ext4,**/*.testdata.json,**/*.wic,**/*.erofs,**/*.erofs.avbverity',
                                  followSymlinks: false,
                                  fingerprint: true,
