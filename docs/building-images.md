@@ -58,6 +58,7 @@ Artifacts are written to `build/tmp/deploy/images/<MACHINE>/`:
 | `imx-secure-image-base-<MACHINE>.rootfs.erofs.avbverity.gz` | Root filesystem with AVB metadata and verity data |
 | `imx-secure-image-base-<MACHINE>.rootfs.sbom-cve-check.spdx.json` | SPDX SBOM with CVE scan results, production builds only |
 | `fitImage` | Signed FIT containing Linux, the bundled initramfs and device trees |
+| `fitImage.ahab` | Signed FIT wrapped in an AHAB OS container when `IMX_FIT_AHAB_ENABLE = "1"` |
 | `imx-boot*.sign` | Signed boot containers |
 | `imx-boot*.fuses/` | SPSDK SRK hashes and fuse scripts |
 

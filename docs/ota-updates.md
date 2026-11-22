@@ -2,7 +2,7 @@
 
 [Back to README](../README.md)
 
-Use this guide when adding an update agent. See the [partitioning](partitioning.md#partition-layout) for storage sizes and mount points.
+Use this guide when adding an update agent. See [partitioning](partitioning.md#partition-layout) for storage sizes and mount points.
 
 The layer provides A/B slot selection and storage mappings. The integrator must handle update delivery, activation policy, boot attempt tracking, health checks, confirmation and recovery. Optional SWUpdate support provides an example for verifying and installing bundles.
 
@@ -17,7 +17,7 @@ On supported i.MX8/9 MMC boots, U-Boot selects the FIT partition to match the bo
 
 U-Boot passes `boot_slot=a` or `boot_slot=b` on the kernel command line. The initramfs uses `root=` to identify the disk and selects the matching root partition. Without `boot_slot=` it keeps the slot identified by `root=`.
 
-An update agent installs the new FIT in `/var/boot-update` and writes the root filesystem image with its AVB metadata and verity data to `/dev/mapper/update`. Both targets belong to the inactive slot. Writes to the inactive rootfs slot are encrypted by dm-crypt.
+An update agent installs `fitImage.ahab` as `/var/boot-update/fitImage` when `IMX_FIT_AHAB_ENABLE = "1"`, or the plain `fitImage` at the same path when disabled. It writes the root filesystem image with its AVB metadata and verity data to `/dev/mapper/update`. Both targets belong to the inactive slot. Writes to the inactive rootfs slot are encrypted by dm-crypt.
 
 i.MX ROM selects between redundant boot firmware image sets using container software versions and boot settings. With version-based selection enabled it tries the image set with the higher software version first. Set `SW_VERSION` when building `imx-boot` to assign this version.
 
