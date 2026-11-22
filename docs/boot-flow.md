@@ -50,8 +50,16 @@ The [initramfs scripts](../recipes-core/initrdscripts/imx-secure-initramfs-init/
 ```mermaid
 flowchart TD
     SLOT["Resolve disk and A/B slot"] --> SEC["Mount secdata<br/>Read encryption state"]
-    SEC --> ROOT["Prepare or open encrypted root<br/>Verify AVB metadata and set up dm-verity"]
-    ROOT --> UPDATE["Open inactive root through dm-crypt<br/>as /dev/mapper/update"]
+    SEC --> STATE{"Initial encryption needed?"}
+    STATE -->|Yes| SOURCE["Verify AVB metadata<br/>on plain root_b"]
+    SOURCE --> NEWKEYS["Create storage keys<br/>Save protected key blobs"]
+    NEWKEYS --> COPY["Open root_a through dm-crypt<br/>Copy root_b into it"]
+    COPY --> FIRSTVERIFY["Verify AVB metadata on encrypted copy<br/>Set up dm-verity"]
+    FIRSTVERIFY --> CLEANUP["Clear plain root_b<br/>Mark encryption complete"]
+    STATE -->|No| KEYS["Load saved storage keys<br/>Open active root through dm-crypt"]
+    KEYS --> VERIFY["Verify AVB metadata<br/>Set up dm-verity"]
+    CLEANUP --> UPDATE["Open inactive root through dm-crypt<br/>as /dev/mapper/update"]
+    VERIFY --> UPDATE
     UPDATE --> MOUNT["Mount verified root read-only<br/>Move secdata under the real root"]
     MOUNT --> DATA["Open encrypted data<br/>Create ext4 if needed and mount it"]
     DATA --> BOOT["Mount active and inactive<br/>boot partitions"]
