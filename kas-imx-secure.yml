@@ -88,6 +88,14 @@ repos:
     branch: wrynose
     path: layers/meta-swupdate
 
+  trowl:
+    url: https://github.com/corefense-security/trowl.git
+    branch: main
+    commit: eec89e395b5c074969ac6976cb7bc867046884dc
+    path: layers/trowl
+    layers:
+      integrations/meta-trowl:
+
 env:
   SECURITY_PROFILE: "dev"
 

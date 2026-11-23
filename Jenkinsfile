@@ -66,6 +66,16 @@ pipeline {
 
         stage('Build image') {
             steps {
+                script {
+                    if (params.SECURITY_PROFILE == 'prod') {
+                        // Remove old reports so this build gets a fresh scan
+                        sh '''
+                            rm -f "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/index.html" \
+                                  "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/report.json" \
+                                  "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/scan.log"
+                        '''
+                    }
+                }
                 sh 'kas build build/kas-resolved.yml'
                 sh 'install -m 0644 build/kas-resolved.yml "build/tmp/deploy/images/$KAS_MACHINE/kas-resolved.yml"'
                 archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/kas-resolved.yml," +
@@ -81,6 +91,17 @@ pipeline {
                                  followSymlinks: false,
                                  fingerprint: true,
                                  onlyIfSuccessful: true
+                script {
+                    if (params.SECURITY_PROFILE == 'prod') {
+                        archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/index.html," +
+                                                    "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/report.json," +
+                                                    "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/scan.log",
+                                         allowEmptyArchive: true,
+                                         followSymlinks: false,
+                                         fingerprint: true,
+                                         onlyIfSuccessful: true
+                    }
+                }
             }
         }
     }
