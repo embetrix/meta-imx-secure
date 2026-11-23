@@ -20,7 +20,8 @@ A Yocto layer that extends the NXP i.MX BSP with secure boot, encrypted and veri
 | Application cryptography | OpenSSL PKCS#11 integration through OP-TEE or NXP Security Middleware (SMW), experimental OP-TEE PQC |
 | TPM support | OP-TEE fTPM |
 | OTA updates | A/B system updates with optional SWUpdate integration for signed and encrypted bundles |
-| Build and hardening | Development and production profiles, kernel and userspace hardening, SPDX SBOM generation and CVE checks |
+| Build and hardening | Development and production profiles, kernel and userspace hardening |
+| Security scanning | SPDX SBOM generation, CVE checks and optional [Trowl](https://github.com/corefense-security/trowl) scans with advanced CVE analysis, hardening checks and secret detection |
 
 These features support [Cyber Resilience Act (CRA)](https://digital-strategy.ec.europa.eu/en/policies/cra-manufacturers) readiness. Compliance depends on the finished product and its maintenance processes.
 
