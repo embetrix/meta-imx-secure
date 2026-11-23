@@ -35,7 +35,7 @@ SECDATA_MNT="/var/secdata"
 DATA_MNT="/var/data"
 
 # Replaced by the actual value in the do_install
-ROOTFS_TYPE="__ROOTFS_TYPE___"
+ROOTFS_TYPE="__ROOTFS_TYPE__"
 
 OPT_ROOT="ro,noatime"
 OPT_PART="noexec,nodev,nosuid,nosymfollow,iversion"
