@@ -9,8 +9,8 @@
 
 / {
 	config {
-#if defined(CONFIG_ENV_IMPORT_FDT) && (defined(CONFIG_AHAB_BOOT) || defined(CONFIG_SILENT_CONSOLE_UNTIL_ENV))
-		/* Apply control DT settings to compiled defaults on every boot */
+#if defined(CONFIG_ENV_IS_NOWHERE) && !defined(CONFIG_ENV_IS_IN_MMC)
+		/* Use compiled defaults when MMC environment storage is disabled */
 		load-environment = <0>;
 #endif
 #if !defined(CONFIG_AHAB_BOOT) || !defined(CONFIG_ENV_IMPORT_FDT)
