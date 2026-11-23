@@ -57,6 +57,7 @@ Artifacts are written to `build/tmp/deploy/images/<MACHINE>/`:
 | `flash-emmc-<MACHINE>.uuu` | UUU script for flashing eMMC using the WIC and block map |
 | `imx-secure-image-base-<MACHINE>.rootfs.erofs.avbverity.gz` | Root filesystem with AVB metadata and verity data |
 | `imx-secure-image-base-<MACHINE>.rootfs.sbom-cve-check.spdx.json` | SPDX SBOM with CVE scan results, production builds only |
+| `trowl/imx-secure-image-base-<MACHINE>.rootfs/` | Trowl `index.html`, `report.json` and `scan.log`, production builds only |
 | `fitImage` | Signed FIT containing Linux, the bundled initramfs and device trees |
 | `fitImage.ahab` | Signed FIT wrapped in an AHAB OS container when `IMX_FIT_AHAB_ENABLE = "1"` |
 | `imx-boot*.sign` | Signed boot containers |

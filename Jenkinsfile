@@ -70,9 +70,9 @@ pipeline {
                     if (params.SECURITY_PROFILE == 'prod') {
                         // Remove old reports so this build gets a fresh scan
                         sh '''
-                            rm -f "build/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/index.html" \
-                                  "build/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/report.json" \
-                                  "build/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/scan.log"
+                            rm -f "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/index.html" \
+                                  "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/report.json" \
+                                  "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/scan.log"
                         '''
                     }
                 }
@@ -93,9 +93,9 @@ pipeline {
                                  onlyIfSuccessful: true
                 script {
                     if (params.SECURITY_PROFILE == 'prod') {
-                        archiveArtifacts artifacts: "build/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/index.html," +
-                                                    "build/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/report.json," +
-                                                    "build/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/scan.log",
+                        archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/index.html," +
+                                                    "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/report.json," +
+                                                    "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/scan.log",
                                          allowEmptyArchive: true,
                                          followSymlinks: false,
                                          fingerprint: true,
