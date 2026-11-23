@@ -29,15 +29,28 @@ See [build artifacts](building-images.md#build-artifacts) for the files produced
 
 ## SWUpdate example implementation
 
-> **NOTE:** This integration provides bundle verification and installation. The integrator must implement and validate the product's boot attempt tracking, health checks, update confirmation and recovery policy.
+> **NOTE:** This integration provides bundle verification and installation. The integrator should implement and validate the product's boot attempt tracking, health checks, update confirmation and recovery policy.
 
-Optional SWUpdate support provides CMS-signed, AES-encrypted `.swu` bundles through `imx-secure-image-base-update`. Install a bundle with `swupdate-client /path/to/imx-secure-image-base-update.swu`.
+Optional SWUpdate support provides CMS-signed, AES-encrypted `.swu` bundles through `imx-secure-image-base-update`.
 
 The example installs the inactive slot and reboots automatically after a successful update. Development updates invalidate the old firmware copy to allow reused software versions. Production updates keep it for integrator-managed fallback and need a higher `SW_VERSION` for ROM to prefer the new firmware. The bundle does not write update state to the firmware environment, and initramfs selects slots from the bootloader arguments without tracking attempts or performing rollback.
 
+Transfer the bundle to the target, then install it:
+
+```sh
+swupdate-client -v /path/to/imx-secure-image-base-update.swu
+```
+
+Or stream a bundle from a download server directly:
+
+```sh
+curl --user USERNAME 'https://downloads.example.com/updates/imx-secure-image-base-update.swu' \
+    | swupdate-client -v -
+```
+
 ### Typical integrator workflow
 
-The integrator must implement and validate this flow for the board. See [SWUpdate best practice: update concept](https://sbabic.github.io/swupdate/swupdate-best-practise.html#update-concept) for the update state machine.
+Integrators can use this flow as a starting point and adapt it to their use case. See [SWUpdate best practice: update concept](https://sbabic.github.io/swupdate/swupdate-best-practise.html#update-concept) for the update state machine.
 
 ```mermaid
 flowchart TD
