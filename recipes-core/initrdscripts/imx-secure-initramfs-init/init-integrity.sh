@@ -34,15 +34,25 @@ setup_avb_verity() {
 	verify_avb "$dev"
 
 	# Keep existing options and count restart_on_corruption in field 14
-	dm_table=$(printf '%s\n' "$dm_table" | awk '{
-		if (NF == 13) {
-			$14 = 1
-		} else {
-			if (NF < 14 || $14 !~ /^[0-9]+$/ || $14 != NF - 14) exit 1
-			$14 = $14 + 1
-		}
-		print $0 " restart_on_corruption"
-	}') || fatal "Invalid dm-verity option count"
+	# The 13 fixed fields include the start sector, length and target type
+	if ! dm_table=$(printf '%s\n' "$dm_table" | awk '
+		{
+			if (NF == 13) {
+				# Add the count field when no options are present
+				print $0 " 1 restart_on_corruption"
+				next
+			}
+			if (NF >= 14 && $14 ~ /^[0-9]+$/ && $14 == NF - 14) {
+				$14 = $14 + 1
+				print $0 " restart_on_corruption"
+				next
+			}
+			printf "invalid dm-verity table (%d fields, count=%s, expected %d options)\n",
+			       NF, $14, NF - 14
+			exit 1
+		}'); then
+		fatal "cannot rewrite dm-verity table: ${dm_table:-no details}"
+	fi
 
 	klog "Setting up dm-verity as $verity_name..."
 	echo "$dm_table" | dmsetup create --readonly "$verity_name" \
