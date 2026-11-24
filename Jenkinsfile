@@ -95,6 +95,7 @@ pipeline {
                     if (params.SECURITY_PROFILE == 'prod') {
                         archiveArtifacts artifacts: "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/index.html," +
                                                     "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/report.json," +
+                                                    "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/openvex.json," +
                                                     "build/tmp/deploy/images/${params.MACHINE}/trowl/imx-secure-image-base-${params.MACHINE}.rootfs/scan.log",
                                          allowEmptyArchive: true,
                                          followSymlinks: false,
