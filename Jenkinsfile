@@ -72,6 +72,7 @@ pipeline {
                         sh '''
                             rm -f "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/index.html" \
                                   "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/report.json" \
+                                  "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/openvex.json" \
                                   "build/tmp/deploy/images/$KAS_MACHINE/trowl/imx-secure-image-base-$KAS_MACHINE.rootfs/scan.log"
                         '''
                     }
