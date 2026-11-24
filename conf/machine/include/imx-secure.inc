@@ -74,7 +74,7 @@ do_image_wic[depends] += "linux-yocto-fitimage:do_deploy"
 # Root filesystem and output formats
 ROOTFS_TYPE ?= "erofs"
 AVB_ROOT_HASH_SIGN ?= "1"
-IMAGE_FSTYPES += "wic.gz wic.bmap ${ROOTFS_TYPE}.avbverity.gz"
+IMAGE_FSTYPES += "wic.gz wic.bmap ${ROOTFS_TYPE}.avbverity.gz tar.zst"
 
 # Deploy the eMMC flashing script only with complete disk images
 IMAGE_CLASSES += "${@bb.utils.contains('IMAGE_FSTYPES', 'wic.gz wic.bmap', 'imx-image-uuu', '', d)}"
