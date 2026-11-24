@@ -2,7 +2,8 @@
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
 # Disable the M33 debug monitor in production builds
-SYSTEM_MANAGER_MONITOR_MODE = "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', '0', '2', d)}"
+PACKAGECONFIG:remove = "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', 'm1 m2', '', d)}"
+PACKAGECONFIG:append = "${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', ' m0', '', d)}"
 
 # INC_LIBC=0 disables debug UART setup and console output
 EXTRA_OEMAKE:append = " ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'prod', \

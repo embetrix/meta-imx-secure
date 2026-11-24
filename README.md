@@ -67,7 +67,7 @@ Open a pull request to add a tested board.
 
 ## Layer dependencies
 
-BSP layers are pinned to NXP `LF6.18.37_2.1.0`. Other repos follow Wrynose. See [kas-imx-secure.yml](kas-imx-secure.yml) for repository URLs and exact revisions.
+The BSP is provided by meta-freescale. See [kas-imx-secure.yml](kas-imx-secure.yml) for repository URLs, branches and revisions.
 
 | Repository | Branch | Layers |
 | --- | --- | --- |
@@ -80,7 +80,6 @@ BSP layers are pinned to NXP `LF6.18.37_2.1.0`. Other repos follow Wrynose. See 
 | [meta-trowl](https://github.com/corefense-security/meta-trowl) | `main` | meta-trowl (optional) |
 | [meta-arm](https://git.yoctoproject.org/meta-arm/tree/?h=wrynose) | `wrynose` | meta-arm and meta-arm-toolchain |
 | [meta-freescale](https://github.com/Freescale/meta-freescale/tree/wrynose) | `wrynose` | meta-freescale |
-| [meta-imx](https://github.com/nxp-imx/meta-imx/tree/wrynose-6.18.37-2.1.0) | `wrynose-6.18.37-2.1.0` | meta-imx-bsp |
 
 ## Commercial support
 
