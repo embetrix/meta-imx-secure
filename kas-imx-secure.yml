@@ -42,7 +42,6 @@ repos:
   meta-arm:
     url: https://git.yoctoproject.org/meta-arm
     branch: wrynose
-    commit: 0979b80429099f1a42dc0026c8c466cee780bc74
     path: layers/meta-arm
     layers:
       meta-arm:
@@ -51,7 +50,6 @@ repos:
   meta-freescale:
     url: https://github.com/Freescale/meta-freescale.git
     branch: wrynose
-    commit: e85acf26e68770c4f0211cbc7af17bed15ef2a27
     path: layers/meta-freescale
 
   meta-avb:
