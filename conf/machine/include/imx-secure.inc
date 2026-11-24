@@ -17,6 +17,17 @@ IMX_SECURE_ENCLAVE_PACKAGES:mx91-nxp-bsp = "imx-secure-enclave"
 IMX_SECURE_ENCLAVE_PACKAGES:mx93-nxp-bsp = "imx-secure-enclave"
 IMX_SECURE_ENCLAVE_PACKAGES:mx95-nxp-bsp = "imx-secure-enclave imx-secure-enclave-seco"
 
+# NXP Wi-Fi feature mappings missing from meta-freescale
+MACHINE_EXTRA_RRECOMMENDS:append = " ${@bb.utils.contains_any('MACHINE_FEATURES', \
+    'nxpwifi-all-sdio nxpwifi-all-pcie nxpwifi-all-usb nxpiw610-sdio nxpaw693-pcie nxpaw693-sdio', \
+    'kernel-module-nxp-wlan', '', d)}"
+MACHINE_FIRMWARE:append = " ${@bb.utils.contains('MACHINE_FEATURES', 'nxpwifi-all-sdio', 'firmware-nxp-wifi-all-sdio', '', d)}"
+MACHINE_FIRMWARE:append = " ${@bb.utils.contains('MACHINE_FEATURES', 'nxpwifi-all-pcie', 'firmware-nxp-wifi-all-pcie', '', d)}"
+MACHINE_FIRMWARE:append = " ${@bb.utils.contains('MACHINE_FEATURES', 'nxpwifi-all-usb', 'firmware-nxp-wifi-all-usb', '', d)}"
+MACHINE_FIRMWARE:append = " ${@bb.utils.contains('MACHINE_FEATURES', 'nxpiw610-sdio', 'firmware-nxp-wifi-nxpiw610-sdio', '', d)}"
+MACHINE_FIRMWARE:append = " ${@bb.utils.contains('MACHINE_FEATURES', 'nxpaw693-pcie', 'firmware-nxp-wifi-nxpaw693-pcie', '', d)}"
+MACHINE_FIRMWARE:append = " ${@bb.utils.contains('MACHINE_FEATURES', 'nxpaw693-sdio', 'firmware-nxp-wifi-nxpaw693-sdio', '', d)}"
+
 # Enable optee-ftpm
 MACHINE_FEATURES:append = " optee-ftpm"
 
