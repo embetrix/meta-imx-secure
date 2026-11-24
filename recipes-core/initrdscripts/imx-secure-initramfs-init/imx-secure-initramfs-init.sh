@@ -41,7 +41,8 @@ OPT_ROOT="ro,noatime"
 OPT_PART="noexec,nodev,nosuid,nosymfollow,iversion"
 
 KMK_BLOB="$SECDATA_MNT/keys/kmk.blob"
-ENC_KEY_BLOB="$SECDATA_MNT/keys/enc-key.blob"
+ROOT_KEY_BLOB="$SECDATA_MNT/keys/enc-root.blob"
+DATA_KEY_BLOB="$SECDATA_MNT/keys/enc-data.blob"
 # AES-256-XTS uses two 256-bit keys
 KEY_SZ=64
 

@@ -72,7 +72,7 @@ flowchart TD
 The WIC image starts with a populated `boot_a`, an empty `root_a` and the plain root image in `root_b`. Migration must finish in slot A:
 
 1. Verify the AVB metadata signature on `root_b` with the public key in the initramfs.
-2. Create an OP-TEE trusted master key and an encrypted storage key. Save their protected blobs in `secdata/keys/`.
+2. Create an OP-TEE trusted master key and two independent encrypted storage keys: `enc-root` for both root slots and `enc-data` for writable data. Save their protected blobs in `secdata/keys/`.
 3. Open `root_a` through dm-crypt and copy all of `root_b` through that mapping, including AVB metadata and verity data.
 4. Verify AVB metadata on the decrypted copy and create the read-only dm-verity mapping.
 5. Clear the plain source in `root_b` with secure discard, or overwrite it with zeros if secure discard fails. Open it through dm-crypt for future updates.

@@ -19,7 +19,7 @@ get_rootfs_crypt_state() {
 	case "$ROOTFS_CRYPT_STATE" in
 		"")
 			# Existing keys need verification, never automatic replacement
-			if [ ! -e "$KMK_BLOB" ] && [ ! -e "$ENC_KEY_BLOB" ]; then
+			if [ ! -e "$KMK_BLOB" ] && [ ! -e "$ROOT_KEY_BLOB" ] && [ ! -e "$DATA_KEY_BLOB" ]; then
 				ROOTFS_CRYPT_STATE=prepare
 			fi
 			;;
@@ -43,39 +43,50 @@ setup_encrypted_keys() {
 
 	if [ "$1" = new ]; then
 		# No encrypted data exists yet, so interrupted key creation can restart
-		rm -f "$KMK_BLOB" "$ENC_KEY_BLOB" || fatal "cannot remove unfinished keys"
+		rm -f "$KMK_BLOB" "$ROOT_KEY_BLOB" "$DATA_KEY_BLOB" \
+			|| fatal "cannot remove unfinished keys"
 		kmk_id=$(keyctl add trusted kmk "new ${KEY_SZ}" @u) \
 			|| fatal "cannot create OP-TEE KMK"
 		keyctl pipe "$kmk_id" > "$KMK_BLOB" \
 			|| fatal "cannot export KMK to $KMK_BLOB"
-		enc_key_id=$(keyctl add encrypted enc-key "new trusted:kmk ${KEY_SZ}" @u) \
-			|| fatal "cannot create enc-key"
-		keyctl pipe "$enc_key_id" > "$ENC_KEY_BLOB" \
-			|| fatal "cannot export enc-key to ${ENC_KEY_BLOB}"
+		root_key_id=$(keyctl add encrypted enc-root "new trusted:kmk ${KEY_SZ}" @u) \
+			|| fatal "cannot create enc-root"
+		keyctl pipe "$root_key_id" > "$ROOT_KEY_BLOB" \
+			|| fatal "cannot export enc-root to $ROOT_KEY_BLOB"
+		data_key_id=$(keyctl add encrypted enc-data "new trusted:kmk ${KEY_SZ}" @u) \
+			|| fatal "cannot create enc-data"
+		keyctl pipe "$data_key_id" > "$DATA_KEY_BLOB" \
+			|| fatal "cannot export enc-data to $DATA_KEY_BLOB"
 		sync
 	else
-		[ -s "$KMK_BLOB" ] && [ -s "$ENC_KEY_BLOB" ] \
+		[ -s "$KMK_BLOB" ] && [ -s "$ROOT_KEY_BLOB" ] && [ -s "$DATA_KEY_BLOB" ] \
 			|| fatal "key blobs missing or empty"
 		keyctl add trusted kmk "load $(cat "$KMK_BLOB")" @u >/dev/null \
 			|| fatal "cannot import OP-TEE KMK from $KMK_BLOB"
-		keyctl add encrypted enc-key "load $(cat "$ENC_KEY_BLOB")" @u >/dev/null \
-			|| fatal "cannot import enc-key from ${ENC_KEY_BLOB}"
+		keyctl add encrypted enc-root "load $(cat "$ROOT_KEY_BLOB")" @u >/dev/null \
+			|| fatal "cannot import enc-root from $ROOT_KEY_BLOB"
+		keyctl add encrypted enc-data "load $(cat "$DATA_KEY_BLOB")" @u >/dev/null \
+			|| fatal "cannot import enc-data from $DATA_KEY_BLOB"
 	fi
 }
 
 # Open a block device with plain dm-crypt using the encrypted key
 # already loaded in the kernel keyring by setup_encrypted_keys().
-# Usage: setup_dmcrypt <device> <dm_name>
+# Usage: setup_dmcrypt <device> <dm_name> <enc-root|enc-data>
 setup_dmcrypt() {
 
 	dev="$1"
 	dm_name="$2"
+	case "$3" in
+		enc-root|enc-data) ;;
+		*) fatal "unknown storage key: $3" ;;
+	esac
 
 	num_sectors=$(blockdev --getsz "$dev") \
 		|| fatal "cannot get size of $dev"
 
 	dmsetup create "$dm_name" --table \
-		"0 $num_sectors crypt aes-xts-plain64 :${KEY_SZ}:encrypted:enc-key 0 $dev 0" \
+		"0 $num_sectors crypt aes-xts-plain64 :${KEY_SZ}:encrypted:$3 0 $dev 0" \
 		|| fatal "cannot open plain dm-crypt $dev as $dm_name"
 
 	# No udev in initramfs so create the device node manually
@@ -103,7 +114,7 @@ setup_encrypted_rootfs() {
 		prepare|copy|cleanup) watchdog_feed_start ;;
 	esac
 
-	# Prepare new keys or load the saved pair
+	# Prepare new keys or load the saved master, root and data keys
 	case "$ROOTFS_CRYPT_STATE" in
 		prepare)
 			verify_avb "$UPDATE_DEV"
@@ -121,7 +132,7 @@ setup_encrypted_rootfs() {
 			;;
 	esac
 	keyctl link @us @s || fatal "cannot link storage keys to the session keyring"
-	setup_dmcrypt "$ROOT_DEV" "$ROOT_DM_NAME"
+	setup_dmcrypt "$ROOT_DEV" "$ROOT_DM_NAME" enc-root
 
 	# Keep the source intact until the encrypted root passes verification
 	case "$ROOTFS_CRYPT_STATE" in
@@ -150,7 +161,7 @@ setup_encrypted_rootfs() {
 			set_rootfs_crypt_state done
 			;;
 	esac
-	setup_dmcrypt "$UPDATE_DEV" "$UPDATE_DM_NAME"
+	setup_dmcrypt "$UPDATE_DEV" "$UPDATE_DM_NAME" enc-root
 }
 
 # Mount a data partition with plain dm-crypt encryption.
@@ -167,7 +178,7 @@ mount_dmcrypt_data() {
 
 	[ -n "$dev" ] || return 0
 
-	setup_dmcrypt "$dev" "$dm_name"
+	setup_dmcrypt "$dev" "$dm_name" enc-data
 
 	if ! blkid -s TYPE "/dev/mapper/$dm_name" >/dev/null 2>&1; then
 		[ -n "$WATCHDOG_PID" ] || watchdog_feed_start
