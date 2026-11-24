@@ -58,5 +58,5 @@ EXTRA_OEMAKE:append = " \
 
 # Keep only the embedded early TAs
 do_install:append() {
-    rm -f ${D}${nonarch_base_libdir}/optee_armtz/*.ta
+    rm -rf ${D}${nonarch_base_libdir}/optee_armtz
 }

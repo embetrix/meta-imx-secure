@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-# BSP layers pinned to NXP LF6.18.37_2.1.0 other repos follow Wrynose
-# https://github.com/nxp-imx/imx-manifest/blob/5e07321d7a0d9e4f46504d078625e403906b63e9/imx-6.18.37-2.1.0.xml
 header:
   version: 14
 
@@ -44,7 +42,6 @@ repos:
   meta-arm:
     url: https://git.yoctoproject.org/meta-arm
     branch: wrynose
-    commit: 0979b80429099f1a42dc0026c8c466cee780bc74
     path: layers/meta-arm
     layers:
       meta-arm:
@@ -53,16 +50,7 @@ repos:
   meta-freescale:
     url: https://github.com/Freescale/meta-freescale.git
     branch: wrynose
-    commit: ca31f33c5b5e433939c5f8442d2de56925d638bd
     path: layers/meta-freescale
-
-  meta-imx:
-    url: https://github.com/nxp-imx/meta-imx.git
-    branch: wrynose-6.18.37-2.1.0
-    commit: 840f8da0f3350bf389067f84922c7436efde0653
-    path: layers/meta-imx
-    layers:
-      meta-imx-bsp:
 
   meta-avb:
     url: "https://github.com/embetrix/meta-avb.git"

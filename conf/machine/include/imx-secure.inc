@@ -4,6 +4,10 @@
 # Shared signing key checks
 INHERIT += "imx-signing-keys"
 
+# Use the NXP BSP and keep our linux-imx security settings
+IMX_DEFAULT_BSP = "nxp"
+IMX_DEFAULT_KERNEL:imx-nxp-bsp = "linux-imx"
+
 # Default PKCS#11 library
 OPENSSL_PKCS11_DEFAULT_PROVIDER ??= "optee"
 

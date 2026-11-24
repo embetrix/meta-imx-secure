@@ -9,6 +9,8 @@ DISTRO_VERSION = "${IMX_SECURE_VERSION}"
 
 DISTRO_FEATURES += "polkit ima integrity security"
 
+PREFERRED_RPROVIDER_libnss-mdns = "avahi-libnss-mdns"
+
 # Use journald instead of a separate syslog daemon
 VIRTUAL-RUNTIME_base-utils-syslog = ""
 
