@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 Embetrix Embedded Systems Solutions <ayoub.zaki@embetrix.com>
 
-DEPENDS:append = " ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'optee-pqc', '', d)}"
+DEPENDS:append = " smw ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', 'optee-pqc', '', d)}"
 
 # Log only core and TA errors in development builds, stay silent in production
 EXTRA_OEMAKE:append = " \
@@ -50,8 +50,10 @@ EXTRA_OEMAKE:append = " \
     CFG_IN_TREE_EARLY_TAS+=trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c \
     CFG_IN_TREE_EARLY_TAS+=avb/023f8f1a-292a-432b-8fc4-de8471358067 \
 "
-# Embed the PQC TAs
+
+# Embed out of tree SMW's TEE backend and the development PQC TA
 EXTRA_OEMAKE:append = " \
+    EARLY_TA_PATHS+=${STAGING_DATADIR}/optee-smw/11b5c4aa-6d20-11ea-bc55-0242ac130003.stripped.elf \
     ${@bb.utils.contains('IMX_SECURITY_PROFILE', 'dev', \
                'EARLY_TA_PATHS+=${STAGING_DATADIR}/optee-pqc/7b1e6f40-9c32-4da8-a567-71930c4e82b6.stripped.elf', '', d)} \
 "
