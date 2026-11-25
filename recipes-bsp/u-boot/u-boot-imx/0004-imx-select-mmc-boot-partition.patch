@@ -4,10 +4,12 @@ Subject: [PATCH] imx: select the mmc boot partition from the image set
 Keep the MMC boot partition in sync with the selected boot image set.
 After board setup, set mmcpart to the configured slot A partition for
 image set 0 or slot B partition for image set 1. Default to partitions
-1 and 3 with both numbers configurable through Kconfig.
+1 and 3 with both numbers configurable through Kconfig. Set mmcroot to
+the configured root partition on the same MMC disk defaulting to 2 and 4.
 
 Append boot_slot=a or boot_slot=b to /chosen/bootargs during the final
-device-tree fixup. Leave root= unchanged so initramfs can select rootfs.
+device-tree fixup. The BSP boot scripts use mmcroot for root= so both
+kernel arguments now identify the selected slot.
 
 Read the image set through SCMI on i.MX9 or SCFW on i.MX8QM/QXP/DXL.
 On i.MX91/93/8ULP, use the ROM-reported image offset instead.
@@ -21,7 +23,7 @@ Signed-off-by: Ayoub Zaki <ayoub.zaki@embetrix.com>
 diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
 --- a/arch/arm/mach-imx/Kconfig
 +++ b/arch/arm/mach-imx/Kconfig
-@@ -296,6 +296,35 @@
+@@ -296,6 +296,51 @@
  config IMX8_ROMAPI
  	def_bool y
  	depends on IMX8MN || IMX8MP || IMX8ULP || IMX91 || IMX93
@@ -35,7 +37,7 @@ diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
 +	help
 +	  Set mmcpart from the selected image set after board setup.
 +	  Pass boot_slot=a or boot_slot=b on the kernel command line.
-+	  Leave root= unchanged for initramfs to select the root filesystem.
++	  Set mmcroot to the configured root partition for the selected slot.
 +	  ROM API platforms support SD and eMMC user-area boot only.
 +	  The SCFW query is unavailable on i.MX8QXP revision B.
 +
@@ -54,6 +56,22 @@ diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
 +	default 3
 +	help
 +	  MMC partition number for boot slot B
++
++config IMX_MMC_ROOT_PART_A
++	int "Root partition for image set 0"
++	depends on IMX_MMC_BOOT_PARTITION
++	range 1 2147483647
++	default 2
++	help
++	  MMC partition number for root slot A
++
++config IMX_MMC_ROOT_PART_B
++	int "Root partition for image set 1"
++	depends on IMX_MMC_BOOT_PARTITION
++	range 1 2147483647
++	default 4
++	help
++	  MMC partition number for root slot B
  
  config SPL_IMX_ROMAPI_LOADADDR
  	hex "Default load address to load image through ROM API"
@@ -72,7 +90,7 @@ diff --git a/arch/arm/mach-imx/mmc-boot-partition.c b/arch/arm/mach-imx/mmc-boot
 new file mode 100644
 --- /dev/null
 +++ b/arch/arm/mach-imx/mmc-boot-partition.c
-@@ -0,0 +1,179 @@
+@@ -0,0 +1,189 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/* (C) Copyright 2026 Embetrix Embedded Systems Solutions, ayoub.zaki@embetrix.com */
 +
@@ -197,7 +215,9 @@ new file mode 100644
 +
 +static int select_boot_partition(void)
 +{
-+	unsigned int image_set, part;
++	unsigned int image_set, part, root_part;
++	char mmcroot[64];
++	int dev;
 +	int ret;
 +
 +	ret = imx_get_boot_image_set(&image_set);
@@ -210,6 +230,14 @@ new file mode 100644
 +
 +	part = image_set ? CONFIG_IMX_MMC_BOOT_PART_B : CONFIG_IMX_MMC_BOOT_PART_A;
 +	ret = env_set_ulong("mmcpart", part);
++	if (ret)
++		return ret;
++
++	root_part = image_set ? CONFIG_IMX_MMC_ROOT_PART_B : CONFIG_IMX_MMC_ROOT_PART_A;
++	dev = env_get_ulong("mmcdev", 10, mmc_get_env_dev());
++	snprintf(mmcroot, sizeof(mmcroot), "/dev/mmcblk%dp%u rootwait rw",
++		 mmc_map_to_kernel_blk(dev), root_part);
++	ret = env_set("mmcroot", mmcroot);
 +	if (ret)
 +		return ret;
 +
