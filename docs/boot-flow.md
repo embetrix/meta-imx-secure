@@ -39,9 +39,9 @@ Optional PQC signing covers the configured AHAB containers, including the FIT wr
 
 ### A/B slot selection
 
-On supported MMC boots, U-Boot selects `boot_a` for firmware image set 0 or `boot_b` for image set 1. It appends `boot_slot=a` or `boot_slot=b` to the kernel command line.
+On supported MMC boots, U-Boot selects `boot_a` for firmware image set 0 or `boot_b` for image set 1. It sets `root=` to the matching root partition and appends `boot_slot=a` or `boot_slot=b` to the kernel command line.
 
-The initramfs uses `root=` to identify the disk and `boot_slot=` to select its root and boot partitions. Without `boot_slot=`, it keeps the root slot identified by `root=`. See [OTA update integration](ota-updates.md) for image set selection and update handling.
+The initramfs uses `root=` to identify the disk and active slot, then selects the matching boot and update partitions. SWUpdate uses `boot_slot=` to select the inactive firmware offset. U-Boot must set both arguments to the same slot. Deploy this initramfs with the U-Boot root selection change. See [OTA update integration](ota-updates.md) for image set selection and update handling.
 
 ## Initramfs workflow
 
