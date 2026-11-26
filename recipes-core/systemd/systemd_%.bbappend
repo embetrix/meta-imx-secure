@@ -3,13 +3,9 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-# OpenSSL is required for resolved's DNSSEC validation
-PACKAGECONFIG:append = " journal-upload openssl"
+PACKAGECONFIG:append = " journal-upload"
 
 RRECOMMENDS:${PN} += "${PN}-journal-upload ${PN}-container"
-
-# Route DNS lookups through resolved's local stub
-RESOLV_CONF = "stub-resolv"
 
 WATCHDOG_RUNTIME_SEC = "15s"
 # The i.MX7ULP watchdog driver allows at most 128 seconds
