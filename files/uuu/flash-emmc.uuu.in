@@ -14,6 +14,10 @@ FB: ucmd setenv fastboot_dev mmc
 FB: ucmd setenv mmcdev ${emmc_dev}
 FB: ucmd mmc dev ${emmc_dev} 0
 
+# Clear U-Boot environment matching fw_env.config
+FB: ucmd mw.b ${loadaddr} 0 0x3000
+FB: ucmd mmc write ${loadaddr} 0x28 0x18
+
 # Clear old secondary firmware that sparse flashing would leave behind
 FB: ucmd mw.b ${loadaddr} 0 @SECONDARY_BOOT_SIZE@
 FB: ucmd mmc write ${loadaddr} @SECONDARY_BOOT_BLOCK@ @SECONDARY_BOOT_BLOCKS@
